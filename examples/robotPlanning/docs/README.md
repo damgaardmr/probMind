@@ -1,6 +1,11 @@
 # robotPlanning
 This set of simulations illustrates different usecases of the "Planning" idiom. The simulations utilizes the [HouseExpo](https://github.com/TeaganLi/HouseExpo) dataset and a modified version of their simulator, to generate realistic SLAM output in the form of a map and estimated position.
 
+Before trying any of running any of the simulations remember to unpack files in the HouseExpo simulator as stated in the modules [README](../../misc/HouseExpo/README.md), e.g. by running the command:
+```
+tar -xvzf probMind/examples/misc/HouseExpo/HouseExpo/json.tar.gz
+```
+
 ## Exploration
 ![Example of pure exploration of utilizing the "Planning" idiom](Exploration.gif)
 
