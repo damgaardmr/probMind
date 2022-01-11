@@ -67,8 +67,8 @@ class Planning(ABC):
         T = torch.tensor([t + self.T_delta])
 
         self.p_z_g = p_z_g
-        if self.p_z_g is None and self.consider_impasse is False:
-            Print("Warning: Goal set consider_impasse is False, thus goals has now effect!")
+        if self.p_z_g is not None and self.consider_impasse is False:
+            print("Warning: Goal is set, but consider_impasse is False, thus goals has now effect!")
 
         # add current state distribution to p_z_s_Minus and maybe delete TOO old state distributions that will not be used anymore!
         self.p_z_s_Minus.append(poutine.trace(p_z_s_t).get_trace())

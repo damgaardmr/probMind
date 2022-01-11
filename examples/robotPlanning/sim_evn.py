@@ -8,7 +8,7 @@ from gym import spaces
 from gym.utils import seeding
 
 from pathlib import Path
-from misc.HouseExpo_Modified.pseudoslam.envs.simulator.pseudoSlam import pseudoSlam
+from misc.HouseExpo.pseudoslam.envs.simulator.pseudoSlam import pseudoSlam
 
 class RobotExplorationT0(gym.Env):
     def __init__(self, config_path='sim_config.yaml'):

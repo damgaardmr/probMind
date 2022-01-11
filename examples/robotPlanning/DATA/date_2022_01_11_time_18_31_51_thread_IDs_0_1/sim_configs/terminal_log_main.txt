@@ -1,0 +1,6 @@
+Running version: 1.5.1
+Total number of CPU's/Processes in cluster:  2
+Available CPU cores: 2
+Starting 2 Processes
+Starting processes with IDs: [0, 1]
+Doing 200 time steps pr. map.

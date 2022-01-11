@@ -1,1 +1,1 @@
-__all__ = ["HouseExpo_Modified", "torch_truncnorm_Modified"]
+__all__ = ["HouseExpo", "torch_truncnorm"]

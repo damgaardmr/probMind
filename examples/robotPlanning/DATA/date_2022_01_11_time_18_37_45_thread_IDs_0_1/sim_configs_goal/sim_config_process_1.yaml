@@ -1,0 +1,30 @@
+continuesActions: true
+json_dir: ../../HouseExpo/json/
+laser:
+  fov: 360
+  noiseSigma: 0.1
+  range: 2
+  resolution: 1
+map_id_set: ../../../../robotPlanning/DATA/date_2022_01_11_time_18_37_45_thread_IDs_0_1/sim_configs_goal/map_ids_process_1.txt
+meter2pixel: 25
+mode: 0
+obstacle:
+  number: 0
+  size:
+    max: 0.6
+    min: 0.2
+resetRandomPose: 1
+robotRadius: 0.2
+slamError:
+  angular: 0
+  linear: 0
+startPose:
+  theta: 0
+  x: 12
+  y: 5
+stateSize:
+  x: 1
+  y: 1
+stepLength:
+  angular: 1
+  linear: 1

@@ -9,7 +9,7 @@ from pyro.contrib.autoname import scope
 import pyro.distributions as dist
 from pyro.distributions.torch_distribution import TorchDistributionMixin
 
-from misc.torch_truncnorm_Modified.TruncatedNormal_Modified import TruncatedNormal
+from misc.torch_truncnorm.TruncatedNormal_Modified import TruncatedNormal
 
 
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # 3.1415927410125732
