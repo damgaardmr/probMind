@@ -35,9 +35,9 @@ This module contains a series of projects incorporating the general probabilisti
 
 This set of simulations illustrates different usecases of the planning idiom. The simulations utilizes the [HouseExpo](https://github.com/TeaganLi/HouseExpo) dataset and a modified version of their simulator, to generate realistic SLAM output in the form of a map and estimated position. Currently, 3 different simulation scenarios have been implemented:
 
-- Exploration
-- Goal Search
-- Planning with Multimodal Action Posterior
+- [Exploration](https://github.com/damgaardmr/probMind/blob/main/examples/robotPlanning/docs/README.md#exploration)
+- [Goal Search](https://github.com/damgaardmr/probMind/blob/main/examples/robotPlanning/docs/README.md#goal-search)
+- [Planning with Multimodal Action Posterior](https://github.com/damgaardmr/probMind/blob/main/examples/robotPlanning/docs/README.md#planning-with-multimodal-action-posterior)
 
 For more information consult the simulation [README](../examples/robotPlanning/docs/README.md)
 
