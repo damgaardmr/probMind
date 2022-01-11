@@ -1,3 +1,0 @@
-Process with ID 0 started!
-Warning: Goal is set, but consider_impasse is False, thus goals has now effect!
-Warning: Goal is set, but consider_impasse is False, thus goals has now effect!
