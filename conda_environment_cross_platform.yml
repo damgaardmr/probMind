@@ -1,0 +1,26 @@
+name: probMind_env_cross_platform
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9.4
+  - anaconda=2021.05
+  - anaconda-client=1.7.2
+  - anaconda-project=0.9.1
+  - tikzplotlib=0.9.16
+  - matplotlib=3.3.4
+  - matplotlib-base=3.3.4
+  - numpy=1.20.1
+  - numpy-base=1.20.1
+  - psutil=5.8.0
+  - pyyaml=5.4.1
+  - pip
+  - pip:
+    - gym==0.20.0
+    - np==1.0.2
+    - opencv-python==4.5.3.56
+    - opt-einsum==3.3.0
+    - pip==21.2.4
+    - pyro-api==0.1.2
+    - pyro-ppl==1.7.0
+    - torch==1.9.0
