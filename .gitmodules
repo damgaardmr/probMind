@@ -1,0 +1,6 @@
+[submodule "examples/misc/torch_truncnorm"]
+	path = examples/misc/torch_truncnorm
+	url = https://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@github.com/damgaardmr/torch_truncnorm.git
+[submodule "examples/misc/HouseExpo"]
+	path = examples/misc/HouseExpo
+	url = https://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@github.com/damgaardmr/HouseExpo.git
