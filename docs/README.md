@@ -13,7 +13,11 @@ The goal of this project is to develope a series of generally applicable and reu
 ```
 If you like this work or use in your scientific projects, please use the reference above.
 
-To try out the code install the project dependencies, and run any of the example scripts via the code in their respective README's. The current dependencies of the project can be installed as a conda environment via the command:
+To try out the code remember to clone submodules e.g. by running:
+```
+git clone --recurse-submodules https://github.com/damgaardmr/probMind.git 
+```
+and install the project dependencies. Then you can run any of the example scripts via the code in their respective README's. The current dependencies of the project can be installed as a conda environment via the command:
 ```
 $ conda env create -f probmind/conda_environment_cross_platform.yml
 ```
