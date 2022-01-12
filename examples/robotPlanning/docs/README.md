@@ -18,7 +18,7 @@ and the simulation can be started via the command:
 ```
 $ cd probmind/examples/robotPlanning
 $ conda activate probMind_env_cross_platform
-$ python __main__.py -config_file "configs/damgaard22Exploration"
+$ python __main__.py -config_file "configs/damgaard22Exploration" -cpu_cores 1
 ```
 For more information we refer you to our publication:
 ```
@@ -42,7 +42,7 @@ and the simulation can be started via the command:
 ```
 $ cd probmind/examples/robotPlanning
 $ conda activate probMind_env_cross_platform
-$ python __main__.py -config_file "configs/damgaard22GoalSearch"
+$ python __main__.py -config_file "configs/damgaard22GoalSearch" -cpu_cores 1
 ```
 For more information we refer you to our publication:
 ```
@@ -68,7 +68,7 @@ and the simulation can be started via the command:
 ```
 $ cd probmind/examples/robotPlanning
 $ conda activate probMind_env_cross_platform
-$ python __main__.py -config_file "configs/damgaard22MultiModalActionPosterior"
+$ python __main__.py -config_file "configs/damgaard22MultiModalActionPosterior" -cpu_cores 1
 ```
 For more information we refer you to our publication:
 ```
