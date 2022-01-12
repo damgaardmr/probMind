@@ -49,7 +49,7 @@ For more information we refer you to our publication:
       title={A Probabilistic Programming Idiom for Goal Search},  
       author={Malte R. Damgaard and Rasmus Pedersen and Thomas Bak},
       year={2022},
-      note={Being documented}
+      note={Being documented. The Title is tentitative}
 }
 ```
 If you like this work or use in your scientific projects, please use the reference above.
@@ -75,10 +75,20 @@ For more information we refer you to our publication:
       title={A Probabilistic Programming Idiom for Planning with Multimodal Action Posterior},  
       author={Malte R. Damgaard and Rasmus Pedersen and Thomas Bak},
       year={2022},
-      note={Being documented}
+      note={Being documented. The Title is tentitative}
 }
 ```
 If you like this work or use in your scientific projects, please use the reference above.
+
+
+## Cluster Computing
+The "__main__.py" script has the three addtional args that can be used to divide the simulation task onto a cluster of computers with different hardware capabilities. The "-cpu_cores" arg determines the number of independent simulations being started on a single computer. The "-thread_start_ID" arg offsets the ID's of the simulations being runned at a specific computer. The "-total_cluster_threads" arg is used to divide the computational burden evenly. These args implement very basic logic and assumes that processors of each computer is roughly equal fast. As an example, if you want to run a simulation on a cluster with 3 individual computers with 1 of them having 8 cpu cores and the others having 4 cpu cores, then you can divide the computational burden of a simulation by running the following commands on each pc:
+```
+$ python __main__.py -cpu_cores 8 -thread_start_ID 0 -total_cluster_threads 16  # on the pc with 8 cores
+$ python __main__.py -cpu_cores 4 -thread_start_ID 8 -total_cluster_threads 16  # on a pc with 4 cores
+$ python __main__.py -cpu_cores 4 -thread_start_ID 12 -total_cluster_threads 16  # on a pc with 4 cores
+```
+
 
 ## TODO
 The following is a list of things that could potentially be improved:

@@ -17,6 +17,7 @@ To try out the code install the project dependencies, and run any of the example
 ```
 $ conda env create -f probmind/conda_environment_cross_platform.yml
 ```
+This will install a conda environment called "probMind_env_cross_platform" with the necessary dependencies.
 
 ## Collaboration/Contributions
 If you would like to collaborate on this project or anything related, or make contributions to the project, feel free to reach out to [Malte R. Damgaard](https://vbn.aau.dk/da/persons/134312) prefeerable via [email](mailto:mrd@es.aau.dk?subject=[GitHub]%20The%20ProbMind%20Project)
