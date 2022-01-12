@@ -127,3 +127,17 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+# # Ignore local simulation DATA
+# /examples/robotPlanning/DATA/*
+# # Reinclude all folders in /examples/robotPlanning/DATA
+# !/examples/robotPlanning/DATA/*/
+# # Ignore everything in the subfolders of /examples/robotPlanning/DATA
+# /examples/robotPlanning/DATA/*/*
+# # Reinclude the play_trajectory.py file in the first-level subfolders of /examples/robotPlanning/DATA
+# !/examples/robotPlanning/DATA/play_trajectory.py
+# !/examples/robotPlanning/DATA/play_trajectory_example/*
+# !/examples/robotPlanning/DATA/play_trajectory_example/*/*
+# !/examples/robotPlanning/DATA/play_trajectory_example/*/*/*
+# !/examples/robotPlanning/DATA/play_trajectory_example/*/*/*/*
