@@ -6,6 +6,6 @@ authors:
   orcid: "https://orcid.org/0000-0003-2818-1176"
 title: "probMind"
 version: 1.0.0
-doi: 10.5281/zenodo.1234
+doi: https://doi.org/10.5281/zenodo.5841192
 date-released: 2022-01-12
 url: "https://github.com/damgaardmr/probMind"
