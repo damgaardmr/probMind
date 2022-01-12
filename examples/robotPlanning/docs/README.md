@@ -3,7 +3,8 @@ This set of simulations illustrates different usecases of the "Planning" idiom. 
 
 Before trying any of running any of the simulations remember to unpack files in the HouseExpo simulator as stated in the modules [README](https://github.com/damgaardmr/HouseExpo#getting-started), e.g. by running the command:
 ```
-tar -xvzf probMind/examples/misc/HouseExpo/HouseExpo/json.tar.gz
+cd probMind/examples/misc/HouseExpo/HouseExpo
+tar -xvzf json.tar.gz
 ```
 
 ## Exploration
