@@ -135,7 +135,7 @@ dmypy.json
 !/examples/robotPlanning/DATA/*/
 # Ignore everything in the subfolders of /examples/robotPlanning/DATA
 /examples/robotPlanning/DATA/*/*
-# Reinclude the play_trajectory.py file in the first-level subfolders of /examples/robotPlanning/DATA
+# Reinclude the play_trajectory.py file and content of the "play_trajectory_example" folder
 !/examples/robotPlanning/DATA/play_trajectory.py
 !/examples/robotPlanning/DATA/play_trajectory_example/*
 !/examples/robotPlanning/DATA/play_trajectory_example/*/*
