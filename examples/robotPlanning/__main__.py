@@ -28,7 +28,8 @@ pathSYS.append(dir(pathSYS[0].replace("robotPlanning", "misc")))
 
 from robotPlanning import RobotPlanning
 
-from sim_evn import RobotExplorationT0
+# from sim_evn import RobotExplorationT0 as SimEvn
+from misc.HouseExpo.pseudoslam.envs.robot_exploration_ProbMind import RobotExplorationProbMind as SimEvn
 
 
 def Generate_goal_dist(env, configs):
@@ -77,7 +78,8 @@ def process_func(processID, dirName, DataDir, configs, env_config_file, Map_orde
 
         # instantiate the simulation environment
         with contextlib.redirect_stdout(open(os.devnull, 'w')):
-            env = RobotExplorationT0(config_path=env_config_file)
+            env_config_file_ = "../../../../robotPlanning/" + env_config_file
+            env = SimEvn(config_path=env_config_file_)
             env.reset(order=Map_order)
         # instantiate the planner
 
@@ -370,6 +372,7 @@ def main():
     # USAGE ...
     # python3 __main__.py -thread_start_ID 3 -total_cluster_threads 10 -cpu_cores 3
     cpu_cores = int(psutil.cpu_count(logical=False))  # use all cores by standard - only returns physical cores
+    cpu_cores = 2
     thread_start_ID = 0
     total_cluster_threads = cpu_cores
     config_folder = "configs/damgaard22Exploration"
