@@ -37,6 +37,8 @@ def animationPlot(map_grid_probabilities, mapShape, meter2pixel, reachGoalMode, 
         plt.gca().add_patch(goalZone)
         if est_goal_center is not None:
             plt.scatter(est_goal_center[0], est_goal_center[1], marker="P", color="black", label="Est. Goal Mean", zorder=3)
+        else:
+            plt.scatter(0, 0, marker="P", color="black", label="Est. Goal Mean", zorder=3, alpha=0.0)  # only to get label
 
     for i in range(len(collisions)):
         if i == 0:
@@ -113,6 +115,7 @@ def main():
     DATAdir = "play_trajectory_example/GoalSearch"  # folder for which simulation data is saved
     mapID = "3e5cc0e228c8a1bca9919a7c22c484d2"  # ID of the map for which the simulation should be replayed
     mapID = "b4e9112e72b9ba64b182841ae4ed443a"  # ID of the map for which the simulation should be replayed
+    mapID = "9e1b0d8b332308d83101441d1b05f374"
 
     #DATAdir = "play_trajectory_example/MultiModalActionPosterior"  # folder for which simulation data is saved
     #mapID = "7fb9c9203cb8c4404f4af1781f1c6999sim1"  # ID of the map for which the simulation should be replayed
@@ -220,7 +223,7 @@ def main():
             if tau == 0:
                 box = axs_animation.get_position()
                 axs_animation.set_position([box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9])
-            axs_animation.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), fancybox=True, shadow=False, ncol=len(labels))
+            axs_animation.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=False, ncol=len(labels))
             if x_limits != None and y_limits != None:
                 axs_animation.set_xlim(x_limits)
                 axs_animation.set_ylim(y_limits)

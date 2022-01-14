@@ -56,7 +56,7 @@ lidar:
 # constraint params
 distance_buffer: 0.05
 P_z_C_scale: 19.75
-constraint_subsampling: 8
+constraint_subsampling: 16
 information_gain_subsampling: 1
 
 # ###################### Environment Settings for the pseudoslam simulator ######################

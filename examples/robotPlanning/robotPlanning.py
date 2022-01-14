@@ -225,12 +225,12 @@ class RobotPlanning(Planning):
 
     def generate_PB_LTM_information_gain_subsampling_context(self, z_s_tau):
         position = z_s_tau  # z_s_tau["position"]
-        PB_labels = lidar_generate_labels(self.params["lidarParams"], position, subsampling=self.information_gain_subsampling)
+        PB_labels = lidar_generate_labels(self.params["lidarParams"], position, self.map_grid_probabilities, subsampling=self.information_gain_subsampling)
         return PB_labels
 
     def generate_PB_LTM_constraint_subsampling_context(self, z_s_tau):
         position = z_s_tau  # z_s_tau["position"]
-        lidar_generate_labels(self.params["lidarParams"], position, subsampling=self.constraint_subsampling)
+        lidar_generate_labels(self.params["lidarParams"], position, self.map_grid_probabilities, subsampling=self.constraint_subsampling)
         # Consider incorporating funtionality to focus subsampling in the direction
         # of movement...
 

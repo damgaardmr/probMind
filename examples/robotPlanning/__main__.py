@@ -358,12 +358,12 @@ def main():
     # USAGE ...
     # python3 __main__.py -thread_start_ID 3 -total_cluster_threads 10 -cpu_cores 3
     cpu_cores = int(psutil.cpu_count(logical=False))  # use all cores by standard - only returns physical cores
-    cpu_cores = 4
+    cpu_cores = 1
     thread_start_ID = 0
     total_cluster_threads = cpu_cores
     # config_folder = "configs/damgaard22Exploration"
     config_folder = "configs/damgaard22GoalSearch"
-    # config_folder = "configs/damgaard22MultiModalActionPosterior"
+    #config_folder = "configs/damgaard22MultiModalActionPosterior"
     
     # Treat args
     args = sys.argv[1:]
