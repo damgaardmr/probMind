@@ -29,12 +29,14 @@ def list_files(dir):
     return r
 
 
-def animationPlot(map_grid_probabilities, mapShape, meter2pixel, reachGoalMode, goal_pos, goal_radius, robotRadius, position, collisions, z_s_tMinus, z_s_tPlus_samples, z_s_tPlus_):
+def animationPlot(map_grid_probabilities, mapShape, meter2pixel, reachGoalMode, goal_pos, goal_radius, est_goal_center, robotRadius, position, collisions, z_s_tMinus, z_s_tPlus_samples, z_s_tPlus_):
 
     if reachGoalMode:
         # draw goal zone from goal_pos and goal_radius
-        goalZone = plt.Circle((goal_pos[0].detach(), goal_pos[1].detach()), goal_radius, color=colors["yellow"], label="Goal")
+        goalZone = plt.Circle((goal_pos[0], goal_pos[1]), goal_radius, color=colors["yellow"], label="True Goal Zone")
         plt.gca().add_patch(goalZone)
+        if est_goal_center is not None:
+            plt.scatter(est_goal_center[0], est_goal_center[1], marker="P", color="black", label="Est. Goal Mean", zorder=3)
 
     for i in range(len(collisions)):
         if i == 0:
@@ -110,7 +112,8 @@ def main():
 
     DATAdir = "play_trajectory_example/GoalSearch"  # folder for which simulation data is saved
     mapID = "3e5cc0e228c8a1bca9919a7c22c484d2"  # ID of the map for which the simulation should be replayed
-    
+    mapID = "b4e9112e72b9ba64b182841ae4ed443a"  # ID of the map for which the simulation should be replayed
+
     #DATAdir = "play_trajectory_example/MultiModalActionPosterior"  # folder for which simulation data is saved
     #mapID = "7fb9c9203cb8c4404f4af1781f1c6999sim1"  # ID of the map for which the simulation should be replayed
     #mapID = "7fb9c9203cb8c4404f4af1781f1c6999sim2"  # ID of the map for which the simulation should be replayed
@@ -178,6 +181,7 @@ def main():
             goal_pos = None
             goal_radius = None
             reachGoalMode = False
+        est_goal_center = None
 
         # robotRadius = 0.2
         robotRadius = data["robotRadius"]
@@ -208,7 +212,10 @@ def main():
             else:
                 z_s_tMinus = np.vstack((z_s_tMinus, position))
 
-            animationPlot(map_grid_probabilities, mapShape, meter2pixel, reachGoalMode, goal_pos, goal_radius, robotRadius, position, collisions, z_s_tMinus, z_s_tPlus_samples, z_s_tPlus_)
+            if "goal_pos" in data:
+                est_goal_center = data["explored_map"]["estimated_goal_mean"][tau]
+
+            animationPlot(map_grid_probabilities, mapShape, meter2pixel, reachGoalMode, goal_pos, goal_radius, est_goal_center, robotRadius, position, collisions, z_s_tMinus, z_s_tPlus_samples, z_s_tPlus_)
             handles, labels = axs_animation.get_legend_handles_labels()
             if tau == 0:
                 box = axs_animation.get_position()
@@ -228,7 +235,7 @@ def main():
                 plt.savefig(save_folder + "/good_map_example_" + str(n) + '.pdf', format='pdf')
 
                 plt.sca(axs[row,plot_idx_in_row])
-                animationPlot(map_grid_probabilities, mapShape, meter2pixel, reachGoalMode, goal_pos, goal_radius, robotRadius, position, collisions, z_s_tMinus, z_s_tPlus_samples, z_s_tPlus_)
+                animationPlot(map_grid_probabilities, mapShape, meter2pixel, reachGoalMode, goal_pos, goal_radius, est_goal_center, robotRadius, position, collisions, z_s_tMinus, z_s_tPlus_samples, z_s_tPlus_)
                 axs[row,plot_idx_in_row].set_title("{percentage:.2f}\%, t = {t}".format(percentage=percentage_explored[tau]*100,t=tau))
                 if tau == tau_to_save[-1]:
                     handles, labels = axs[row,plot_idx_in_row].get_legend_handles_labels()

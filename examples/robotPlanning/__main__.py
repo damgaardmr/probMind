@@ -32,41 +32,6 @@ from robotPlanning import RobotPlanning
 from misc.HouseExpo.pseudoslam.envs.robot_exploration_ProbMind import RobotExplorationProbMind as SimEvn
 
 
-def Generate_goal_dist(env, configs):
-    goal_radius = 0.5  # a circle of 50 cm
-    r_in_pixels = int(np.ceil(goal_radius * configs["meter2pixel"]))
-
-    reachable = False
-    while not reachable:
-        g_x = torch.randint(r_in_pixels, env.sim.world.shape[1] - r_in_pixels, (1,))
-        g_y = torch.randint(r_in_pixels, env.sim.world.shape[0] - r_in_pixels, (1,))
-
-        if np.sum(np.abs(env.sim.world[g_y - r_in_pixels:g_y + r_in_pixels, g_x - r_in_pixels:g_x + r_in_pixels])) == 0:
-            reachable = True
-
-    goal_pos = torch.tensor([g_x / configs["meter2pixel"], g_y / configs["meter2pixel"]], dtype=torch.float)
-    g_standard_diviation = torch.tensor(goal_radius / 3)  # 99.7% of samples within a circle with goal_radius
-    g_variance = g_standard_diviation * g_standard_diviation
-
-    def p_z_g_circle():
-        z_g_ = goal_pos.detach()
-        cov_g = g_variance * torch.eye(2)
-        _p_z_g = dist.MultivariateNormal(z_g_, cov_g)
-        z_g = pyro.sample("z_s", _p_z_g)
-        return z_g
-
-    # The following does NOT work since we need to be able to calculate the logprob of the goal distribution
-    # from a sample from p_z_s_t, which is not necessarely within the support of the below goal definition.
-    def p_z_g_square():
-        g_min = torch.tensor([goal_pos[0] - goal_radius, goal_pos[1] - goal_radius], dtype=torch.float)
-        g_max = torch.tensor([goal_pos[0] + goal_radius, goal_pos[1] + goal_radius], dtype=torch.float)
-        _p_z_g = dist.Uniform(g_min, g_max).to_event(1)
-        z_g = pyro.sample("z_s", _p_z_g)
-        return z_g
-
-    p_z_g = p_z_g_circle
-    return p_z_g, goal_pos, goal_radius
-
 
 def process_func(processID, dirName, DataDir, configs, env_config_file, Map_order, num_maps, t_max, reachGoalMode=False):
     with LoggingPrinter(Path(DataDir + "/terminal_log_" + str(processID) + ".txt")):
@@ -78,7 +43,7 @@ def process_func(processID, dirName, DataDir, configs, env_config_file, Map_orde
 
         # instantiate the simulation environment
         with contextlib.redirect_stdout(open(os.devnull, 'w')):
-            env_config_file_ = "../../../../robotPlanning/" + env_config_file
+            env_config_file_ = "../../../../../robotPlanning/" + env_config_file
             env = SimEvn(config_path=env_config_file_)
             env.reset(order=Map_order)
         # instantiate the planner
@@ -94,12 +59,14 @@ def process_func(processID, dirName, DataDir, configs, env_config_file, Map_orde
 
         act = np.zeros(3)  # start by doing nothing!
 
-        standard_diviation = torch.tensor(configs["initial_3_sigma"] / 3)  # 99.7% of samples within a circle of 20 cm
+        standard_diviation = torch.tensor(configs["initial_3_sigma"] / 3)  # 99.7% of samples within a circle of "initial_3_sigma" cm
         variance = standard_diviation * standard_diviation
         cov_s = variance * torch.eye(2)
 
         if reachGoalMode:
-            p_z_g, goal_pos, goal_radius = Generate_goal_dist(env, configs)
+            goal_radius = configs["goal_zone_radius"]  # a circle of 50 cm
+            g_standard_diviation = torch.tensor(goal_radius / 3)  # 99.7% of samples within a circle with goal_radius
+            g_variance = g_standard_diviation * g_standard_diviation
         else:
             p_z_g = None
 
@@ -107,6 +74,8 @@ def process_func(processID, dirName, DataDir, configs, env_config_file, Map_orde
         n_map_sims = 0
         while os.path.exists(dirName_ + '/' + str(n_map_sims) + '.png'):
             n_map_sims = n_map_sims + 1
+
+
 
         t = 0
         data = {}
@@ -118,6 +87,7 @@ def process_func(processID, dirName, DataDir, configs, env_config_file, Map_orde
         data["explored_map"]["planned_state_choosen"] = []
         data["explored_map"]["planned_actions_samples"] = []
         data["explored_map"]["planned_states_samples"] = []
+        data["explored_map"]["estimated_goal_mean"] = []
         data["explored_map_collision"]["t"] = []
         data["explored_map_collision"]["map"] = []
         time_pr_iteration = []
@@ -145,12 +115,29 @@ def process_func(processID, dirName, DataDir, configs, env_config_file, Map_orde
                 z_s = pyro.sample("z_s", _p_z_s_t)
                 return z_s
 
+            if reachGoalMode:
+                if obs[2] is not None:
+                    goal_pos = torch.tensor([obs[2][0], obs[2][1]], dtype=torch.float)
+                    def p_z_g():
+                        z_g_ = goal_pos.detach()
+                        cov_g = g_variance * torch.eye(2)
+                        _p_z_g = dist.MultivariateNormal(z_g_, cov_g)
+                        z_g = pyro.sample("z_s", _p_z_g)
+                        return z_g
+                else:
+                    goal_pos = None
+                    p_z_g = None
+            else:
+                goal_pos = None
+                p_z_g = None
+
+
             # make new plan
             tic = time.time()
             z_a_tPlus, z_s_tPlus_, z_a_tPlus_samples, z_s_tPlus_samples = agent.makePlan(t, T_delta, p_z_s_t, map_grid_probabilities, return_mode=configs["return_Mode"], p_z_g=p_z_g)
             toc = time.time()
             time_pr_iteration.append(toc - tic)
-            # print("################## Process with ID " + str(processID) + " took " + str(toc - tic) + " s ##################")
+            print("################## Process with ID " + str(processID) + " took " + str(toc - tic) + " s ##################")
 
             # convert plan to the format used by the simulator
             act[0] = z_a_tPlus[0].numpy()[0]
@@ -180,14 +167,13 @@ def process_func(processID, dirName, DataDir, configs, env_config_file, Map_orde
 
             if reachGoalMode:
                 # draw goal zone from goal_pos and goal_radius
-                goalZone = plt.Circle((goal_pos[0].detach(), goal_pos[1].detach()), goal_radius, color='green')
-                plt.gca().add_patch(goalZone)
+                #goalZone = plt.Circle((goal_pos[0].detach(), goal_pos[1].detach()), goal_radius, color='green')
+                goalZone_true = plt.Circle((env.goal_pos_in_m[0], env.goal_pos_in_m[1]), goal_radius, color='green')
+                plt.gca().add_patch(goalZone_true)
 
-                goal_dist = np.linalg.norm(z_s_t - goal_pos)
-                if goal_dist <= goal_radius:
-                    done = True
-                else:
-                    done = False
+                if obs[2] is not None:
+                    goalZone_obs = plt.Circle((obs[2][0], obs[2][1]), 0.1, color='orange')
+                    plt.gca().add_patch(goalZone_obs)
 
             # draw planned trajectory samples
             for j in range(len(z_s_tPlus_samples)):
@@ -254,6 +240,8 @@ def process_func(processID, dirName, DataDir, configs, env_config_file, Map_orde
                 data["explored_map"]["planned_state_choosen"].append(z_s_tPlus_)  # [0])
                 data["explored_map"]["planned_actions_samples"].append(z_a_tPlus_samples)
                 data["explored_map"]["planned_states_samples"].append(z_s_tPlus_samples)
+                if reachGoalMode:
+                    data["explored_map"]["estimated_goal_mean"].append(goal_pos)
 
             if t >= t_max or done:
                 dirName_ = dirName + "/" + env.sim.map_id
@@ -271,8 +259,8 @@ def process_func(processID, dirName, DataDir, configs, env_config_file, Map_orde
                 data["meter2pixel"] = meter2pixel
                 data["robotRadius"] = robotRadius
                 if reachGoalMode:
-                    data["goal_pos"] = goal_pos
-                    data["goal_radius"] = goal_radius
+                    data["goal_pos"] = env.goal_pos_in_m
+                    data["goal_radius"] = configs["goal_zone_radius"]
                 metrics = {}
                 metrics["true_map_area_in_pixels"] = np.sum(env.sim.world == env.sim.map_color['free'])
                 metrics["time_pr_iteration"] = time_pr_iteration
@@ -305,6 +293,7 @@ def process_func(processID, dirName, DataDir, configs, env_config_file, Map_orde
                 data["explored_map"]["planned_state_choosen"] = []
                 data["explored_map"]["planned_actions_samples"] = []
                 data["explored_map"]["planned_states_samples"] = []
+                data["explored_map"]["estimated_goal_mean"] = []
                 data["explored_map_collision"]["t"] = []
                 data["explored_map_collision"]["map"] = []
                 time_pr_iteration = []
@@ -325,9 +314,6 @@ def process_func(processID, dirName, DataDir, configs, env_config_file, Map_orde
                 with contextlib.redirect_stdout(open(os.devnull, 'w')):
                     env.reset(order=Map_order)
 
-                # generate new goal after env reset
-                if reachGoalMode:
-                    p_z_g, goal_pos, goal_radius = Generate_goal_dist(env, configs)
             t += 1
 
 
@@ -372,10 +358,11 @@ def main():
     # USAGE ...
     # python3 __main__.py -thread_start_ID 3 -total_cluster_threads 10 -cpu_cores 3
     cpu_cores = int(psutil.cpu_count(logical=False))  # use all cores by standard - only returns physical cores
+    cpu_cores = 4
     thread_start_ID = 0
     total_cluster_threads = cpu_cores
-    config_folder = "configs/damgaard22Exploration"
-    # config_folder = "configs/damgaard22GoalSearch"
+    # config_folder = "configs/damgaard22Exploration"
+    config_folder = "configs/damgaard22GoalSearch"
     # config_folder = "configs/damgaard22MultiModalActionPosterior"
     
     # Treat args
@@ -453,6 +440,10 @@ def main():
         env_configs['map_id_set'] = "../../../../" + config_folder + "/" + configs['map_id_set']
         env_configs['meter2pixel'] = configs['meter2pixel']
         env_configs['mode'] = configs['mode']
+        env_configs["reachGoalMode"] = configs["reachGoalMode"]
+        if configs["reachGoalMode"]:
+            env_configs["goal_zone_radius"] = configs["goal_zone_radius"]
+            env_configs["goal_zone_est_error_3_sigma"] = configs["goal_zone_est_error_3_sigma"]
         env_configs['continuesActions'] = True
         env_configs['obstacle'] = configs['obstacle']
         env_configs['robotRadius'] = configs['robotRadius']

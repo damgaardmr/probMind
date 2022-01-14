@@ -1,6 +1,9 @@
 # ###################### Settings for __Main__.py ######################
-map_id_set: map_ids_fully_explored.txt  #
+#map_id_set: map_ids_fully_explored.txt  #
+map_id_set: map_id.txt  #
 reachGoalMode: True  # generate random goals and search for them
+goal_zone_radius: 0.5
+goal_zone_est_error_3_sigma: 0.1  # used to determine the covariance of the gaussian noise added to the estimated mean of the goal zone
 Map_order: True
 t_max: 200
 T_delta: 2
