@@ -59,7 +59,7 @@ This simulation illustrate the use of the "Planning" idiom for multi robot navig
 - It illustrates a simplistic implementation of Theory of Mind
 
 The readme for this simulation can be found at
-- [Multi Robot Planning](https://github.com/damgaardmr/probMind/blob/main/examples/robotPlanning/docs/README.md#exploration)
+- [Multi Robot Planning](https://github.com/damgaardmr/probMind/tree/main/examples/multiRobotPlanning/docs#multirobotplanning)
 
 
 
