@@ -8,7 +8,9 @@ tar -xvzf json.tar.gz
 ```
 
 ## Exploration
-![Example of pure exploration of utilizing the "Planning" idiom](Exploration.gif)
+<p align="center">
+  <img src=Exploration.gif>
+</p>
 
 This simulation examplifies pure exploration by utilizing the "Planning" idiom. The goal of the robot is to explore its environment, i.e., determine the state of all cells in a gridmap. The config for this simulation can be found in 
 ```
@@ -22,7 +24,7 @@ $ python __main__.py -config_file "configs/damgaard22Exploration" -cpu_cores 1
 ```
 For more information we refer you to our publication:
 ```
-@unpublished{damgaard2021AKS,
+@unpublished{damgaard2022AKS,
       title={A Probabilistic Programming Idiom for Active Knowledge Search}, 
       author={Malte R. Damgaard and Rasmus Pedersen and Thomas Bak},
       year={2022},
@@ -32,7 +34,9 @@ For more information we refer you to our publication:
 If you like this work or use in your scientific projects, please use the reference above.
 
 ## Goal Search
-![Example of searching for goals utilizing the "Planning" idiom](GoalSearch.gif)
+<p align="center">
+  <img src=GoalSearch.gif>
+</p>
 
 This simulation examplifies how the "Planning" idiom can be used to find goals in an environment. The simulation builds upon the pure "Exploration" example, by implementing a fallback to exploration whenever the goal is not in sight. Futhermore, this simulation also illustrates reflection about impasse. The config for this simulation can be found in 
 ```
@@ -46,7 +50,7 @@ $ python __main__.py -config_file "configs/damgaard22GoalSearch" -cpu_cores 1
 ```
 For more information we refer you to our publication:
 ```
-@unpublished{damgaard2021GS,
+@unpublished{damgaard2022GS,
       title={A Probabilistic Programming Idiom for Goal Search},  
       author={Malte R. Damgaard and Rasmus Pedersen and Thomas Bak},
       year={2022},
@@ -57,7 +61,9 @@ If you like this work or use in your scientific projects, please use the referen
 
 
 ## Planning with Multimodal Action Posterior
-![This is an example of a simulation](MultiModalActionPosterior1.gif)
+<p align="center">
+  <img src=MultiModalActionPosterior1.gif>
+</p>
 
 In environments with highly non-convex representations it is often the case that there exist more than one good plan for the future. This simulation illustrates the use of a multimodal action posterior to represent such ambiguities of the best plan for the future. The simulation builds upon the "Goal Search" example.
 The config for this simulation can be found in 
@@ -72,7 +78,7 @@ $ python __main__.py -config_file "configs/damgaard22MultiModalActionPosterior" 
 ```
 For more information we refer you to our publication:
 ```
-@unpublished{damgaard2021MAP,
+@unpublished{damgaard2022MAP,
       title={A Probabilistic Programming Idiom for Planning with Multimodal Action Posterior},  
       author={Malte R. Damgaard and Rasmus Pedersen and Thomas Bak},
       year={2022},

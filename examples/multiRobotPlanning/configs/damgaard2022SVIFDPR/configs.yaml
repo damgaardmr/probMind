@@ -1,0 +1,47 @@
+# ######################  overall Settings and for __Main__.py ######################
+N_Robots: 12
+N_simulations: 50
+simulated_time_pr_sim: 300 # s = 5 min
+
+# size of robots as a radius of minimum spanning disk 
+r_radius: 0.138
+r_diviation_percentage: 20 # +-
+# https://emanual.robotis.com/docs/en/platform/turtlebot3/specifications/
+# the wheels on the robot is placed in the front. The robot is 138mm long and 178mm wide, thus asssuming the wheel to be placed in the front an conservative estimate is
+# from https://www.robotis.us/turtlebot-3-burger-us/ a more appropriate value would be 105 mm
+
+save_pngs_for_gif: True
+framerate: 24
+
+
+# ###################### Settings for agent/robots ######################
+T_delta: 4  # number of timesteps predicted into the future
+t_delta: 1.0  # seconds pr. timestep
+t_buffer: 0.03  # a buffer used when deciding if there is time to calculate one more time
+svi_epochs: 10
+
+K: 1  # number of modes of the posterior path distribution
+desirability_scale_factor: 3.0
+constraint_scale_factor: 5.0
+
+N_posterior_samples: 25
+
+lr: 0.05  # learning rate of the Adam optimizer
+
+a_support: [0.44, 5.68]  # [2*0.22,2*2.84] [m/s,rad/s] turtlebot3 burger
+model_error: [0.05,0.05,0.10] 
+
+alpha_init: [1000., 1000.]  # small initial preference for driving forward
+beta_init: [600., 1000.]
+
+
+# ###################### Settings for environment ######################
+goal_radius: 0.25
+plan_dist: 2
+receive_distance: 2.0
+real_time_factor: 0.20  # for simulation of 12 robots on a PC with an intel i5-12600k CPU
+pos_error: 0.05  # 3 standard diviations in meters
+angle_error: 2.5  # 3 standard diviations in degree
+estimation_scale_factor: 1  # scales specified measurement covariance to simulate noise in the estimated pose
+#estimation_scale_factor: 5  # scales specified measurement covariance to simulate noise in the estimated pose
+render_receive_distance: False

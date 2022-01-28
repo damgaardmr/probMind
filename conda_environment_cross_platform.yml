@@ -26,3 +26,4 @@ dependencies:
     - pyro-ppl==1.7.0
     - torch==1.9.0
     - icc_rt
+    - imageio-ffmpeg

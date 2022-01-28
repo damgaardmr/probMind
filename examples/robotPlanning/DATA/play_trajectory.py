@@ -10,7 +10,7 @@ import imageio
 # https://matplotlib.org/stable/tutorials/text/usetex.html
 # https://matplotlib.org/stable/gallery/text_labels_and_annotations/tex_demo.html
 # remember that special charathers in strings in figures have to have prober escaping: i.e. use "\%" instead of "%"
-plt.rcParams['text.usetex'] = True  
+plt.rcParams['text.usetex'] = True
 
 colors = {
   "yellow": "#FBBC05",
@@ -116,11 +116,16 @@ def main():
     mapID = "3e5cc0e228c8a1bca9919a7c22c484d2"  # ID of the map for which the simulation should be replayed
     mapID = "b4e9112e72b9ba64b182841ae4ed443a"  # ID of the map for which the simulation should be replayed
     mapID = "9e1b0d8b332308d83101441d1b05f374"
+    mapID = "30eb9263ce3efb9b5a943fc4161d4c6c"
+    mapID = "3102ab88a439304a74fca0d26be703ef"
+    mapID = "9497933d2a19318df74fd7197f515f1c"
+    #mapID = "a730377aac9fddfe21ef643e31d11b88"
 
     #DATAdir = "play_trajectory_example/MultiModalActionPosterior"  # folder for which simulation data is saved
     #mapID = "7fb9c9203cb8c4404f4af1781f1c6999sim1"  # ID of the map for which the simulation should be replayed
     #mapID = "7fb9c9203cb8c4404f4af1781f1c6999sim2"  # ID of the map for which the simulation should be replayed
     #mapID = "7fb9c9203cb8c4404f4af1781f1c6999sim3"  # ID of the map for which the simulation should be replayed
+    #mapID = "7fb9c9203cb8c4404f4af1781f1c6999"
     save_folder = DATAdir
 
     save_folder = save_folder + "/" + mapID + "/plots"

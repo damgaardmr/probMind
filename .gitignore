@@ -141,3 +141,14 @@ dmypy.json
 !/examples/robotPlanning/DATA/play_trajectory_example/*/*
 !/examples/robotPlanning/DATA/play_trajectory_example/*/*/*
 !/examples/robotPlanning/DATA/play_trajectory_example/*/*/*/*
+
+
+# Ignore local simulation DATA
+/examples/multiRobotPlanning/DATA/*
+# Reinclude all folders in /examples/multiRobotPlanning/DATA
+!/examples/multiRobotPlanning/DATA/*/
+# Ignore everything in the subfolders of /examples/multiRobotPlanning/DATA
+/examples/multiRobotPlanning/DATA/*/*
+# Reinclude the create_media.py and graphs.py file
+!/examples/multiRobotPlanning/DATA/DATA_PROCESSING/create_media.py
+!/examples/multiRobotPlanning/DATA/DATA_PROCESSING/graphs.py

@@ -37,7 +37,9 @@ This module is supposed to contain the implementations of the reuseable probabil
 This module contains a series of projects incorporating the general probabilistic idioms into problem specific use-cases. 
 
 ### robotPlanning
-![This is an example of a simulation](../examples/robotPlanning/docs/MultiModalActionPosterior1.gif)
+<p align="center">
+  <img src=../examples/robotPlanning/docs/MultiModalActionPosterior1.gif>
+</p>
 
 This set of simulations illustrates different usecases of the planning idiom. The simulations utilizes the [HouseExpo](https://github.com/TeaganLi/HouseExpo) dataset and a modified version of their simulator, to generate realistic SLAM output in the form of a map and estimated position. Currently, 3 different simulation scenarios have been implemented:
 
@@ -46,6 +48,22 @@ This set of simulations illustrates different usecases of the planning idiom. Th
 - [Planning with Multimodal Action Posterior](https://github.com/damgaardmr/probMind/blob/main/examples/robotPlanning/docs/README.md#planning-with-multimodal-action-posterior)
 
 For more information consult the simulation [README](../examples/robotPlanning/docs/README.md)
+
+### multiRobotPlanning
+<p align="center">
+  <img src=../examples/multiRobotPlanning/docs/example.gif>
+</p>
+
+This simulation illustrate the use of the "Planning" idiom for multi robot navigation. The goal of each robot is to navigate between two alternating goal zones without colliding with the other robots. The motivation behind this simulation is two folds:
+- It illustrates how SVI and message-passing can be combined to de-centralize the computational burden of complex problems
+- It illustrates a simplistic implementation of Theory of Mind
+
+The readme for this simulation can be found at
+- [Multi Robot Planning](https://github.com/damgaardmr/probMind/blob/main/examples/robotPlanning/docs/README.md#exploration)
+
+
+
+
 
 ## TODO/NEW IDEAS/Future Work
 - [X] how to detect when an impasse occurs?

@@ -2,6 +2,7 @@ import torch
 from torch.distributions import constraints
 import pyro
 import pyro.distributions as dist
+from pyro import poutine
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -69,6 +70,7 @@ class RobotPlanning(Planning):
         self.constraint_subsampling  = configs["constraint_subsampling"]
         self.information_gain_subsampling = configs["information_gain_subsampling"]
 
+        self.memorable_states = []
 
         super().__init__(K,
                          M,
@@ -97,6 +99,29 @@ class RobotPlanning(Planning):
                 k = dist.Categorical(pyro.param('assignment_probs')).sample()
                 z_a_tauPlus = z_a_tauPlus_mean[k]
                 z_s_tauPlus = z_s_tauPlus_mean[k]
+
+                # if N_modes == 2:
+                #     # remember states where we could have obtained information by picking the other options
+                #     # generalize to more than two modes!
+                #     z_s1 = z_s_tauPlus_mean[0][-1].detach()
+                #     z_s2 = z_s_tauPlus_mean[-1][-1].detach()
+                #     path_divergence = torch.sum(((z_s1 - z_s2)**2))
+
+                #     tmp = self.information_gain_subsampling
+                #     self.information_gain_subsampling = 10
+                #     z_s1_infogain_prob = super().P_z_i_tau(z_s1)
+                #     z_s2_infogain_prob = super().P_z_i_tau(z_s2)
+                #     self.information_gain_subsampling = tmp
+                #     print(path_divergence)
+                #     print(z_s1_infogain_prob)
+                #     print(z_s2_infogain_prob)
+                #     if k == 0:
+                #         if path_divergence > 0.5 and z_s2_infogain_prob > 0.8:
+                #             self.memorable_states.append(poutine.trace(p_z_s_t).get_trace())
+                #     else:
+                #         if path_divergence > 0.5 and z_s1_infogain_prob > 0.8:
+                #             self.memorable_states.append(poutine.trace(p_z_s_t).get_trace())
+
             else:
                 z_a_tauPlus = z_a_tauPlus_mean[0]
                 z_s_tauPlus = z_s_tauPlus_mean[0]
@@ -156,7 +181,7 @@ class RobotPlanning(Planning):
         return z_a_tauPlus_mean, z_s_tauPlus_mean
 
     # ################### Abstract methods of the class Planning ####################
-    def q_z_MB_tau(self, z_s_tauMinus1, k):
+    def q_z_MB_tau(self, tau, z_s_tauMinus1, k):
         alpha_init = torch.tensor([[10000., 10000.], [10000., 10000.]], dtype=torch.float)
         beta_init = torch.tensor([[10000., 10000.], [10000., 10000.]], dtype=torch.float)
         a_alpha = pyro.param("a_alpha_{}".format(k), alpha_init[k], constraint=constraints.positive)  # alpha,beta = 1 gives uniform!
@@ -166,7 +191,7 @@ class RobotPlanning(Planning):
         z_a = pyro.sample("z_a", _q_z_a_tau)
         return z_a
 
-    def p_z_MB_tau(self, z_s_tau):
+    def p_z_MB_tau(self, tau, z_s_tau):
         # values should not be changed - use the params in "action_transforme" instead!
         a_min = torch.tensor([0., 0.], dtype=torch.float)
         a_max = torch.tensor([1., 1.], dtype=torch.float)
@@ -174,14 +199,14 @@ class RobotPlanning(Planning):
         z_a = pyro.sample("z_a", _p_z_a_tau)
         return z_a
 
-    def p_z_s_tau(self, z_s_tauMinus1, z_a_tauMinus1):
+    def p_z_s_tau(self, tau, z_s_tauMinus1, z_a_tauMinus1):
         mean = z_s_tauMinus1 + self.action_transforme(z_a_tauMinus1)
         cov = self.params["cov_s"]
         _p_z_s_tau = dist.MultivariateNormal(mean, cov)
         z_s = pyro.sample("z_s", _p_z_s_tau)
         return z_s
 
-    def d_c_tau(self, z_s_tau, z_LTM, z_PB_posterior):
+    def d_c_tau(self, tau, z_s_tau, z_LTM, z_PB_posterior):
         # z_s_tau: position
         # z_LTM: samples of distances to occupied map cells
         d_c_tau = []
@@ -212,10 +237,10 @@ class RobotPlanning(Planning):
         z_LTM["z_Map"] = z_Map
         return z_LTM
 
-    def p_z_PB(self, z_s_tau):
+    def p_z_PB(self, tau, z_s_tau):
         p_z_Lidar_prior(self.params["lidarParams"])
 
-    def p_z_PB_posterior(self, z_s_tau, z_LTM):
+    def p_z_PB_posterior(self, tau, z_s_tau, z_LTM):
         position = z_s_tau  # z_s_tau["position"]
         z_Map = z_LTM["z_Map"]
         z_lidar = p_z_Lidar_posterior(position, z_Map, self.params["lidarParams"])
@@ -234,7 +259,7 @@ class RobotPlanning(Planning):
         # Consider incorporating funtionality to focus subsampling in the direction
         # of movement...
 
-    def I_c_tilde(self, d):
+    def I_c_tilde(self, tau, d):
         # approximation to the indicator function used for distances
         # d: the distance to a constraint
         # _I_c_tilde: the approximation of the indicator function

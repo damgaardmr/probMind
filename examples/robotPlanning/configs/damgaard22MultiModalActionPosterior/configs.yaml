@@ -28,17 +28,22 @@ N: 2  # N: number of LTM samples used in calculation of the information gain
 G: 1  # G: number of samples from each independent constraint
 L: 5  # L: number of past states to consider in progress
 
-desirability_scale_factor: 0.1
-progress_scale_factor: 0.01
-info_gain_scale_factor: 2.0
+desirability_scale_factor: 0.03
+# progress_scale_factor: 0.01
+progress_scale_factor: 0.005
+#info_gain_scale_factor: 2.0
+info_gain_scale_factor: 1.0
 
 consider_impasse: True  # True enables check of impasse and Goal search
 
 initial_lr: 0.05
 gamma: 0.2  # final learning rate will be gamma * initial_lr
 
-initial_3_sigma: 0.2  # used to define covariance of the distribution over initial position - 99.7% of samples within a circle of 2 cm
-movement_3_sigma: 0.2  # 99.7% of future movements can be expected to be within a circle of 20 cm
+# In these simulations we have lowered to the uncertainties, since the values used for the exploration simulations did not allow the robot to go through narrow doorways
+initial_3_sigma: 0.1  # used to define covariance of the distribution over initial position - 99.7% of samples within a circle of 2 cm
+movement_3_sigma: 0.05  # 99.7% of future movements can be expected to be within a circle of 5 cm
+#initial_3_sigma: 0.2  # used to define covariance of the distribution over initial position - 99.7% of samples within a circle of 2 cm
+#movement_3_sigma: 0.2  # 99.7% of future movements can be expected to be within a circle of 20 cm
 a_support: [2, 2]  # support of the action distributions
 
 # lidar params
@@ -56,7 +61,7 @@ lidar:
 # constraint params
 distance_buffer: 0.05
 P_z_C_scale: 19.75
-constraint_subsampling: 16
+constraint_subsampling: 25
 information_gain_subsampling: 1
 
 # ###################### Environment Settings for the pseudoslam simulator ######################

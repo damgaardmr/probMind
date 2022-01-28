@@ -55,6 +55,7 @@ class Planning(ABC):
         # https://pyro.ai/examples/svi_part_iv.html
         if loss is None:
             loss = pyro.infer.TraceEnum_ELBO(num_particles=1)
+            # loss = pyro.infer.RenyiELBO()  # might be better when K>1
 
         self.svi_instance = pyro.infer.SVI(model=self.__WM_planning_model,
                                            guide=self.__WM_planning_guide,
@@ -67,8 +68,8 @@ class Planning(ABC):
         T = torch.tensor([t + self.T_delta])
 
         self.p_z_g = p_z_g
-        if self.p_z_g is not None and self.consider_impasse is False:
-            print("Warning: Goal is set, but consider_impasse is False, thus goals has now effect!")
+        #if self.p_z_g is not None and self.consider_impasse is False:
+        #    print("Warning: Goal is set, but consider_impasse is False, thus goals has now effect!")
 
         # add current state distribution to p_z_s_Minus and maybe delete TOO old state distributions that will not be used anymore!
         self.p_z_s_Minus.append(poutine.trace(p_z_s_t).get_trace())
@@ -113,7 +114,6 @@ class Planning(ABC):
 
         P_z_C_accum = torch.tensor([1.], dtype=torch.float)
 
-
         assignment_probs = torch.ones(self.K) / self.K
         k = pyro.sample('k', dist.Categorical(assignment_probs), infer={"enumerate": "sequential"})
         # k is only used in the guide, but due to Pyro it also needs to be in the model
@@ -141,34 +141,19 @@ class Planning(ABC):
         return z_a_tauPlus, z_s_tauPlus, k
 
     def __WM_planning_step_model(self, tau, T, k, z_s_tauMinus1, p_z_s_Minus, P_z_C_accum, P_impasse):
-        with scope(prefix=str(tau)):
-            z_a_tauMinus1 = self.p_z_MB_tau(z_s_tauMinus1)
+        with scope(prefix=str(tau-1)):
+            z_a_tauMinus1 = self.p_z_MB_tau(tau-1, z_s_tauMinus1)
 
-            p_z_s_tau_trace = poutine.trace(self.p_z_s_tau).get_trace(z_s_tauMinus1, z_a_tauMinus1)
+        with scope(prefix=str(tau)):
+            p_z_s_tau_trace = poutine.trace(self.p_z_s_tau).get_trace(tau, z_s_tauMinus1, z_a_tauMinus1)
             z_s_tau = p_z_s_tau_trace.nodes["_RETURN"]["value"]
 
         # calculate the probability of the state satiesfying the constraints and accummulate that probability
-        P_z_C_tau = self.__P_z_c_tau(z_s_tau, z_s_tauMinus1)
+        P_z_C_tau = self.__P_z_c_tau(tau, z_s_tau, z_s_tauMinus1)
         P_z_C_accum = probabilistic_AND_independent([P_z_C_accum, P_z_C_tau])
 
-        if tau >= T:  # last timestep - consider if goal state is reach
-            if P_impasse > torch.tensor([0.90]):  # if the probability of being in an impasse is high, then explore
-                P_z_d = torch.tensor([0.0])
-            else:  # calculate the pseudo probability of being in the goal state
-                P_z_d = self.__P_z_d_tau(tau, p_z_s_tau_trace, self.p_z_g)
-
-            if P_z_d < torch.tensor([0.10]):  # if pseudo probability of being close to the goal is small, then explore
-                # calculate the (pseudo) probability of the state giving new information
-                P_z_i = self.__P_z_i_tau(z_s_tau)
-
-                # calculate the (pseudo) probability of the state yielding progress compared to previous states
-                P_z_p = self.__P_z_p_tau(tau, p_z_s_tau_trace, p_z_s_Minus)
-            else:  # focus on achieving the goal
-                P_z_i = torch.tensor([0.0])
-                P_z_p = torch.tensor([0.0])
-
-            with scope(prefix=str(tau)):
-                pyro.sample("x_A", self.__p_z_A_tau(P_z_d, P_z_p, P_z_i, P_z_C_accum), obs=torch.tensor([1.], dtype=torch.float))
+        if tau >= T:  # last timestep
+            P_z_d = self.__WM_planning_logic(tau, T, P_impasse, z_s_tau, p_z_s_tau_trace, p_z_s_Minus, P_z_C_tau, P_z_C_accum)
 
             z_a_tauPlus = [z_a_tauMinus1]
             z_s_tauPlus = [z_s_tau]
@@ -176,28 +161,18 @@ class Planning(ABC):
         else:  # intermidiate timesteps
             z_a_tauPlus, z_s_tauPlus, P_z_d_end = self.__WM_planning_step_model(tau + 1, T, k, z_s_tau, p_z_s_Minus, P_z_C_accum, P_impasse)
 
-            if P_z_d_end < torch.tensor([0.10]):  # if pseudo probability of being close to the goal is small, then explore
-                # calculate the (pseudo) probability of the state giving new information
-                P_z_i = self.__P_z_i_tau(z_s_tau)
-
-                # calculate the (pseudo) probability of the state yielding progress compared to previous states
-                P_z_p = self.__P_z_p_tau(tau, p_z_s_tau_trace, p_z_s_Minus)
-            else:  # focus on achieving the goal
-                P_z_i = torch.tensor([0.0])
-                P_z_p = torch.tensor([0.0])
-
-            with scope(prefix=str(tau)):
-                pyro.sample("x_A", self.__p_z_A_tau(P_z_d_end, P_z_p, P_z_i, P_z_C_accum), obs=torch.tensor([1.], dtype=torch.float))
+            self.__WM_planning_logic(tau, T, P_impasse, z_s_tau, p_z_s_tau_trace, p_z_s_Minus, P_z_C_tau, P_z_C_accum, P_z_d_end = P_z_d_end)
 
             z_a_tauPlus.insert(0, z_a_tauMinus1)
             z_s_tauPlus.insert(0, z_s_tau)
             return z_a_tauPlus, z_s_tauPlus, P_z_d_end
 
     def __WM_planning_step_guide(self, tau, T, k, z_s_tauMinus1):
-        with scope(prefix=str(tau)):
-            z_a_tauMinus1 = self.q_z_MB_tau(z_s_tauMinus1, k)
+        with scope(prefix=str(tau-1)):
+            z_a_tauMinus1 = self.q_z_MB_tau(tau-1, z_s_tauMinus1, k)
 
-            p_z_s_tau_trace = poutine.trace(self.p_z_s_tau).get_trace(z_s_tauMinus1, z_a_tauMinus1)
+        with scope(prefix=str(tau)):
+            p_z_s_tau_trace = poutine.trace(self.p_z_s_tau).get_trace(tau, z_s_tauMinus1, z_a_tauMinus1)
             z_s_tau = p_z_s_tau_trace.nodes["_RETURN"]["value"]
 
         if tau >= T:
@@ -209,6 +184,42 @@ class Planning(ABC):
             z_a_tauPlus.insert(0, z_a_tauMinus1)
             z_s_tauPlus.insert(0, z_s_tau)
             return z_a_tauPlus, z_s_tauPlus
+
+    def __WM_planning_logic(self, tau, T, P_impasse, z_s_tau, p_z_s_tau_trace, p_z_s_Minus, P_z_C_tau, P_z_C_accum, P_z_d_end = None):
+        if tau >= T:  # last timestep - consider if goal state is reach
+            if self.consider_impasse and P_impasse > torch.tensor([0.90]):  # if the probability of being in an impasse is high, then explore
+                P_z_d = torch.tensor([0.0])
+            else:  # calculate the pseudo probability of being in the goal state
+                P_z_d = self.__P_z_d_tau(tau, p_z_s_tau_trace, self.p_z_g)
+
+            if P_z_d < torch.tensor([0.10]):  # if pseudo probability of being close to the goal is small, then explore
+                # calculate the (pseudo) probability of the state giving new information
+                P_z_i = self.__P_z_i_tau(tau, z_s_tau)
+
+                # calculate the (pseudo) probability of the state yielding progress compared to previous states
+                P_z_p = self.__P_z_p_tau(tau, p_z_s_tau_trace, p_z_s_Minus)
+            else:  # focus on achieving the goal
+                P_z_i = torch.tensor([0.0])
+                P_z_p = torch.tensor([0.0])
+
+            with scope(prefix=str(tau)):
+                pyro.sample("x_A", self.__p_z_A_tau(P_z_d, P_z_p, P_z_i, P_z_C_accum), obs=torch.tensor([1.], dtype=torch.float))
+
+            return P_z_d
+
+        else:  # intermidiate timesteps
+            if P_z_d_end < torch.tensor([0.10]):  # if pseudo probability of being close to the goal is small, then explore
+                # calculate the (pseudo) probability of the state giving new information
+                P_z_i = self.__P_z_i_tau(tau, z_s_tau)
+
+                # calculate the (pseudo) probability of the state yielding progress compared to previous states
+                P_z_p = self.__P_z_p_tau(tau, p_z_s_tau_trace, p_z_s_Minus)
+            else:  # focus on achieving the goal
+                P_z_i = torch.tensor([0.0])
+                P_z_p = torch.tensor([0.0])
+
+            with scope(prefix=str(tau)):
+                pyro.sample("x_A", self.__p_z_A_tau(P_z_d_end, P_z_p, P_z_i, P_z_C_accum), obs=torch.tensor([1.], dtype=torch.float))
 
     def __P_z_A_tau(self, P_z_d, P_z_p, P_z_i, P_z_c):
         P_z_A1 = probabilistic_OR_independent([P_z_i, P_z_p, P_z_d])  # <-- the order of args might matter!
@@ -281,7 +292,11 @@ class Planning(ABC):
 
         return P_z_p
 
-    def __P_z_i_tau(self, z_s_tau):
+
+    def P_z_i_tau(self, tau, z_s_tau):
+        return self.__P_z_i_tau(tau, z_s_tau)
+
+    def __P_z_i_tau(self, tau, z_s_tau):
         with poutine.block():  # nested inference
             _z_s_tau = z_s_tau.detach()
             _z_s_tau.requires_grad = True
@@ -291,10 +306,10 @@ class Planning(ABC):
                 return self.p_z_LTM()
 
             def p_z_2_prior():
-                return self.p_z_PB(_z_s_tau)
+                return self.p_z_PB(tau, _z_s_tau)
 
             def p_z_2_posterior(z_LTM):
-                return self.p_z_PB_posterior(_z_s_tau, z_LTM)
+                return self.p_z_PB_posterior(tau, _z_s_tau, z_LTM)
 
             # create subsampling context for LTM and PB and Fetch labels/keys to use as observation sites
             z_2_labels = self.generate_PB_LTM_information_gain_subsampling_context(z_s_tau.detach())  # might contain pyro.sample statements!
@@ -333,7 +348,7 @@ class Planning(ABC):
 
         return P_z_i_out
 
-    def __P_z_c_tau(self, z_s_tau, z_s_tauMinus1):
+    def __P_z_c_tau(self, tau, z_s_tau, z_s_tauMinus1):
         with poutine.block():  # nested inference
             _z_s_tau = z_s_tau.detach()
             _z_s_tau.requires_grad = True
@@ -341,13 +356,15 @@ class Planning(ABC):
             # Create subsampling context for LTM and PB
             self.generate_PB_LTM_constraint_subsampling_context(z_s_tau.detach())  # might contain pyro.sample statements!
 
+            _P_z_c_tau_ = []
+
             for g in range(self.G):
                 z_LTM_g = self.p_z_LTM()  # sample long-term memory
-                z_PB_posterior_g = self.p_z_PB_posterior(_z_s_tau, z_LTM_g)  # sample from the posterior perceptual buffer
-                d_c_tau = self.d_c_tau(_z_s_tau, z_LTM_g, z_PB_posterior_g)  # calculate the constraint distance
+                z_PB_posterior_g = self.p_z_PB_posterior(tau, _z_s_tau, z_LTM_g)  # sample from the posterior perceptual buffer
+                d_c_tau = self.d_c_tau(tau, _z_s_tau, z_LTM_g, z_PB_posterior_g)  # calculate the constraint distance
                 I_c_tau = torch.zeros(len(d_c_tau))
                 for h in range(len(d_c_tau)):  # approximate the indicator function
-                    I_c_tau[h] = self.I_c_tilde(d_c_tau[h])  # use a smooth approximation to the indicator function to preserve differentiability
+                    I_c_tau[h] = self.I_c_tilde(tau, d_c_tau[h])  # use a smooth approximation to the indicator function to preserve differentiability
 
                 if g == 0:
                     _P_z_c_tau_ = torch.zeros(len(I_c_tau))
@@ -382,15 +399,15 @@ class Planning(ABC):
 
     # ############### Methods that needs to be implemented by the user! ###############
     @abstractmethod
-    def q_z_MB_tau(self, z_s_tauMinus1, k):
+    def q_z_MB_tau(self, tau, z_s_tauMinus1, k):
         raise NotImplementedError
 
     @abstractmethod
-    def p_z_MB_tau(self, z_s_tau):
+    def p_z_MB_tau(self, tau, z_s_tau):
         raise NotImplementedError
 
     @abstractmethod
-    def p_z_s_tau(self, z_s_tauMinus1, z_a_tauMinus1):
+    def p_z_s_tau(self, tau, z_s_tauMinus1, z_a_tauMinus1):
         raise NotImplementedError
 
     @abstractmethod
@@ -398,15 +415,15 @@ class Planning(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def p_z_PB(self, z_s_tau):
+    def p_z_PB(self, tau, z_s_tau):
         raise NotImplementedError
 
     @abstractmethod
-    def p_z_PB_posterior(self, z_s_tau, z_LTM):
+    def p_z_PB_posterior(self, tau, z_s_tau, z_LTM):
         raise NotImplementedError
 
     @abstractmethod
-    def I_c_tilde(self, d):
+    def I_c_tilde(self, tau, d):
         # approximation to the indicator function used for distances
         # d: the distance to a constraint
         # _I_c_tilde: the approximation of the indicator function which should
@@ -415,7 +432,7 @@ class Planning(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def d_c_tau(self, z_s_tau, z_LTM, z_PB_posterior):
+    def d_c_tau(self, tau, z_s_tau, z_LTM, z_PB_posterior):
         # returns list of outputs of constraint indicator functions taking the args:
         # z_s_tau, z_LTM, z_PB_posterior
         # That is the function should return a list of H constraints like:

@@ -24,7 +24,7 @@ except ImportError:
 
 from sys import path as pathSYS
 from os.path import dirname as dir
-pathSYS.append(dir(pathSYS[0].replace("robotPlanning", "misc")))
+pathSYS.append(dir(pathSYS[0].replace("robotPlanning", "misc"))) 
 
 from robotPlanning import RobotPlanning
 
@@ -179,10 +179,18 @@ def process_func(processID, dirName, DataDir, configs, env_config_file, Map_orde
             for j in range(len(z_s_tPlus_samples)):
                 z_s_tPlus = []
                 for tau in range(len(z_s_tPlus_samples[j])):
+                    pos_ = z_s_tPlus_samples[j][tau].detach().cpu().numpy()
+                    alpha = (len(z_s_tPlus_samples[j])-tau)/len(z_s_tPlus_samples[j]) * 0.1
+
+                    robot = plt.Circle((pos_[0], pos_[1]), robotRadius, color='black', alpha=alpha)
+                    plt.gca().add_patch(robot)
+
                     if tau == 0:
-                        z_s_tPlus = z_s_tPlus_samples[j][tau].detach().cpu().numpy()
+                        z_s_tPlus = pos_
                     else:
-                        z_s_tPlus = np.vstack((z_s_tPlus, z_s_tPlus_samples[j][tau].detach().cpu().numpy()))
+                        z_s_tPlus = np.vstack((z_s_tPlus, pos_))
+
+
                 plt.plot(z_s_tPlus[:, 0], z_s_tPlus[:, 1], color="black")
 
             # draw planned trajectory
@@ -226,6 +234,13 @@ def process_func(processID, dirName, DataDir, configs, env_config_file, Map_orde
                 plt.gca().add_patch(robot)
 
             percentage_explored.append(env.sim.measure_ratio())
+
+
+            # for i in range(len(agent.memorable_states)):
+            #     memorable_state_sample = agent.memorable_states[i].nodes["z_s"]["value"]
+            #     memorable_state = plt.Circle((memorable_state_sample[0], memorable_state_sample[1]), robotRadius, color='purple')
+            #     plt.gca().add_patch(memorable_state)
+
 
             # uncomment these lines the show plots
             # also comment out the line "matplotlib.use('Agg')"
@@ -363,7 +378,7 @@ def main():
     total_cluster_threads = cpu_cores
     # config_folder = "configs/damgaard22Exploration"
     config_folder = "configs/damgaard22GoalSearch"
-    #config_folder = "configs/damgaard22MultiModalActionPosterior"
+    config_folder = "configs/damgaard22MultiModalActionPosterior"
     
     # Treat args
     args = sys.argv[1:]
