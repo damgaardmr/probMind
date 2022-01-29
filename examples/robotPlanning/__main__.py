@@ -377,7 +377,7 @@ def main():
     thread_start_ID = 0
     total_cluster_threads = cpu_cores
     # config_folder = "configs/damgaard22Exploration"
-    config_folder = "configs/damgaard22GoalSearch"
+    # config_folder = "configs/damgaard22GoalSearch"
     config_folder = "configs/damgaard22MultiModalActionPosterior"
     
     # Treat args

@@ -4,12 +4,12 @@ import os
 
 def main():
     deleteData = False
-    speedup = 5
+    speedup = 1
     FILE_TYPE = ".gif"
-    #FILE_TYPE = ".mp4"
+    FILE_TYPE = ".mp4"
     save_folder = "../date_2022_01_27_time_13_06_03/MEDIA"
     
-    for simID in range(29,33):
+    for simID in range(1,51):
         simName = "pngs_sim_" + str(simID)
         MEDIA_data_folder = save_folder + "/" + simName
         FILE_NAME = simName + "_" + str(speedup) + "x"
@@ -24,7 +24,7 @@ def main():
                     writer.append_data(image)
                 except:
                     print("Error with Frame: " + str(frame))
-                print("Finished " + str(frame/N_frames*100) + " %")
+                #print("Finished " + str(frame/N_frames*100) + " %")
 
         if deleteData:
             for f in os.listdir(MEDIA_data_folder):

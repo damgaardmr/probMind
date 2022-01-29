@@ -152,3 +152,6 @@ dmypy.json
 # Reinclude the create_media.py and graphs.py file
 !/examples/multiRobotPlanning/DATA/DATA_PROCESSING/create_media.py
 !/examples/multiRobotPlanning/DATA/DATA_PROCESSING/graphs.py
+# Reinclude the results for the paper damgaard2022SVIFDPR
+!/examples/multiRobotPlanning/DATA/damgaard2022SVIFDPR/*
+!/examples/multiRobotPlanning/DATA/damgaard2022SVIFDPR/*/*

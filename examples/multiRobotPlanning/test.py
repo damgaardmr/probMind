@@ -24,8 +24,9 @@ def model(data):
 
 hmc_kernel = HMC(model, step_size=0.0855, num_steps=4)
 mcmc = MCMC(hmc_kernel, num_samples=500, warmup_steps=100)
-mcmc.run(data)
-samples = mcmc.get_samples()['beta']
+lol = mcmc.run(data)
+samples = mcmc.get_samples()#['beta']
+#print(samples)
+#print(samples.mean(0))
 print(samples)
-print(samples.mean(0))
 
