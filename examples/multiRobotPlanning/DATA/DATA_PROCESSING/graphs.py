@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 import imageio
+import tikzplotlib
+
+
 
 # latex formatting strings:
 # https://matplotlib.org/stable/tutorials/text/usetex.html
@@ -23,8 +26,8 @@ colors = {
 
 
 def main():
-	LOGSdir = "../date_2022_01_27_time_13_06_03/LOGS"
-	N_simulations = 45
+	LOGSdir = "../damgaard2022SVIFDPR/LOGS"
+	N_simulations = 50
 
 	sim_time_all_sims = []
 	dists_true_min_all_sims = []
@@ -97,34 +100,116 @@ def main():
 		minimum_seperating_distance_pr_sim.append(np.min(dists_true_min_all_sims[sim_id]))
 
 	#print(minimum_seperating_distance_pr_sim)
+	minimum_ = np.min(minimum_seperating_distance_pr_sim)
 	mean = np.mean(minimum_seperating_distance_pr_sim)
 	std = np.std(minimum_seperating_distance_pr_sim)
 	var = np.var(minimum_seperating_distance_pr_sim)
 
-	print("Minimum Seperating distance pr sim mean: " + str(mean) + " +- " + str(std) + " std. (var: " + str(var) + ")")
-	plt.figure(1)
+	print("Minimum Seperating Distance pr sim mean: " + str(mean) + " +- " + str(std) + " std. (var: " + str(var) + ")")
+	print("minimum of minimums ... : " + str(minimum_))
+	fig, ax = plt.subplots(figsize=[6.4, 6.4/2])
 	for sim_id in range(len(sim_time_all_sims)):
-		plt.plot(sim_time_all_sims[sim_id], dists_true_min_all_sims[sim_id]) #, color=colors["blue"])
-	
-	# plt.plot(sim_time_all_sims[sim_id], dists_true_min_all_sims[sim_id], color=colors["black"], linewidth=3, label="Seperation Distance")
-	plt.plot([sim_time[0], sim_time[-1]], [0, 0], linewidth=3, linestyle="--", color=colors["black"], label="Collision")
-	plt.legend()
+		if sim_id == 0:
+			plt.plot(sim_time_all_sims[sim_id], dists_true_min_all_sims[sim_id], color=colors["blue"], label="MSD")
+		else:
+			plt.plot(sim_time_all_sims[sim_id], dists_true_min_all_sims[sim_id], color=colors["blue"])
 
+	# plt.plot(sim_time_all_sims[sim_id], dists_true_min_all_sims[sim_id], color=colors["black"], linewidth=3, label="Seperation Distance")
+	plt.plot([sim_time[0], sim_time[-1]], [0, 0], linewidth=3, color=colors["black"], label="Collision")
+	plt.plot([sim_time[0], sim_time[-1]], [mean, mean], linewidth=2, linestyle="dotted", color=colors["black"], label="MSD Mean")
+	plt.plot([sim_time[0], sim_time[-1]], [minimum_, minimum_], linewidth=2, linestyle="--", color=colors["black"], label="MSD Minimum")
+
+	plt.legend(loc='upper right')
+	plt.xlabel("Time [s]")
+	plt.ylabel("Distance [m]")
+
+	tikzFolder = LOGSdir
+	tikz_file_path = tikzFolder + "/" + "tikz_Seperating_distance.tikz"
+	tikzplotlib.save(tikz_file_path)
+	# modify generated tikz file
+	width_str = "\\linewidth"
+	plot_width = 1.0  # *width_str
+	plot_height = 0.64  # *width_str
+	fin = open(tikz_file_path, "rt")
+	fout = open(tikzFolder + "/tmp_tikz_file.tikz", "wt")
+	for line in fin:
+	    if "\\begin{axis}[" in line:
+	        fout.write(line)
+	        fout.write("width={width}{width_str},\n".format(width=plot_width, width_str=width_str))
+	        fout.write("height={height}{width_str},\n".format(height=plot_height,width_str=width_str))
+	        fout.write("clip marker paths=true,\n")  # fixes error with the order of plotting
+	        fout.write("scaled x ticks=false,\n")
+	    else:
+	        fout.write(line)
+	fin.close()
+	fout.close()
+	os.remove(tikz_file_path)
+	os.rename(tikzFolder + "/tmp_tikz_file.tikz", tikz_file_path)
 
 	# # ########################### Msg received histogram ###########################
 	N_msgs_received_all_sims = sum(N_msgs_received_all_sims, [])
 	bins = np.arange(0, np.max(N_msgs_received_all_sims) + 1.5) - 0.5
-	fig, ax = plt.subplots()
-	_ = ax.hist(N_msgs_received_all_sims, bins)
+	fig, ax = plt.subplots(figsize=[6.4, 6.4/2])
+	_ = ax.hist(N_msgs_received_all_sims, bins, color=colors["blue"])
 	ax.set_xticks(bins + 0.5)
+	plt.xlabel("Messages Received [1]")
+	plt.ylabel("Count [1]")
+
+	tikzFolder = LOGSdir
+	tikz_file_path = tikzFolder + "/" + "tikz_msg_received_histogram.tikz"
+	tikzplotlib.save(tikz_file_path)
+	# modify generated tikz file
+	width_str = "\\linewidth"
+	plot_width = 1.0  # *width_str
+	plot_height = 0.64  # *width_str
+	fin = open(tikz_file_path, "rt")
+	fout = open(tikzFolder + "/tmp_tikz_file.tikz", "wt")
+	for line in fin:
+	    if "\\begin{axis}[" in line:
+	        fout.write(line)
+	        fout.write("width={width}{width_str},\n".format(width=plot_width, width_str=width_str))
+	        fout.write("height={height}{width_str},\n".format(height=plot_height,width_str=width_str))
+	        fout.write("clip marker paths=true,\n")  # fixes error with the order of plotting
+	        fout.write("scaled x ticks=false,\n")
+	    else:
+	        fout.write(line)
+	fin.close()
+	fout.close()
+	os.remove(tikz_file_path)
+	os.rename(tikzFolder + "/tmp_tikz_file.tikz", tikz_file_path)
+
 
 	# ########################### goal reached histogram ###########################
 	N_times_goal_reached_all_sims = sum(N_times_goal_reached_all_sims, [])
-	plt.figure(3)
 	bins = np.arange(0, np.max(N_times_goal_reached_all_sims) + 1.5) - 0.5
-	fig, ax = plt.subplots()
-	_ = ax.hist(N_times_goal_reached_all_sims, bins)
+	fig, ax = plt.subplots(figsize=[6.4, 6.4*0.4])
+	_ = ax.hist(N_times_goal_reached_all_sims, bins, color=colors["blue"])
 	ax.set_xticks(bins + 0.5)
+	plt.xlabel("Number of Times Reached [1]")
+	plt.ylabel("Count [1]")
+
+	tikzFolder = LOGSdir
+	tikz_file_path = tikzFolder + "/" + "tikz_goals_reached_histogram.tikz"
+	tikzplotlib.save(tikz_file_path)
+	# modify generated tikz file
+	width_str = "\\linewidth"
+	plot_width = 1.0  # *width_str
+	plot_height = 0.4  # *width_str
+	fin = open(tikz_file_path, "rt")
+	fout = open(tikzFolder + "/tmp_tikz_file.tikz", "wt")
+	for line in fin:
+	    if "\\begin{axis}[" in line:
+	        fout.write(line)
+	        fout.write("width={width}{width_str},\n".format(width=plot_width, width_str=width_str))
+	        fout.write("height={height}{width_str},\n".format(height=plot_height,width_str=width_str))
+	        fout.write("clip marker paths=true,\n")  # fixes error with the order of plotting
+	        fout.write("scaled x ticks=false,\n")
+	    else:
+	        fout.write(line)
+	fin.close()
+	fout.close()
+	os.remove(tikz_file_path)
+	os.rename(tikzFolder + "/tmp_tikz_file.tikz", tikz_file_path)
 
 
 	plt.show()

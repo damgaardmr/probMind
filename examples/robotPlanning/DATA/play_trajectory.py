@@ -100,7 +100,7 @@ def animationPlot(map_grid_probabilities, mapShape, meter2pixel, reachGoalMode, 
 
 def main():
     framerate = 10000 # 1 / 0.05
-    scalar = 2  # scaling of plot
+    scalar = 3  # scaling of plot
     n_images_to_same = 8
     SAVE_AS_BAD_EXAMPLE = False
     CREATE_GIF = True
@@ -126,6 +126,10 @@ def main():
     #mapID = "7fb9c9203cb8c4404f4af1781f1c6999sim2"  # ID of the map for which the simulation should be replayed
     #mapID = "7fb9c9203cb8c4404f4af1781f1c6999sim3"  # ID of the map for which the simulation should be replayed
     #mapID = "7fb9c9203cb8c4404f4af1781f1c6999"
+    
+    DATAdir = "date_2022_02_28_time_14_25_47_thread_IDs_0_0"  # folder for which simulation data is saved
+    mapID = "empty"
+
     save_folder = DATAdir
 
     save_folder = save_folder + "/" + mapID + "/plots"
@@ -153,6 +157,8 @@ def main():
             pickleFile = DATAfiles[i]
         # if DATAfiles[i].endswith(".xz") and DATAfiles[i].replace(".xz", ".p") not in DATAfiles:
         #    compressed_pickleFiles.append(DATAfiles[i])
+
+    pickleFile = DATAdir + "/" + mapID + "/2.xz"
 
     if pickleFile is None:
         print("File with trajectory not found!")

@@ -378,8 +378,9 @@ def main():
     total_cluster_threads = cpu_cores
     # config_folder = "configs/damgaard22Exploration"
     # config_folder = "configs/damgaard22GoalSearch"
-    config_folder = "configs/damgaard22MultiModalActionPosterior"
-    
+    config_folder = "configs/damgaard22GoalSearch_experiment2"
+    # config_folder = "configs/damgaard22MultiModalActionPosterior"
+
     # Treat args
     args = sys.argv[1:]
     for i in range(len(args)):
@@ -459,6 +460,10 @@ def main():
         if configs["reachGoalMode"]:
             env_configs["goal_zone_radius"] = configs["goal_zone_radius"]
             env_configs["goal_zone_est_error_3_sigma"] = configs["goal_zone_est_error_3_sigma"]
+            if "randomGoal" in configs:
+                env_configs["randomGoal"] = configs["randomGoal"]
+            if "goalPosition" in configs:
+                env_configs["goalPosition"] = configs["goalPosition"]
         env_configs['continuesActions'] = True
         env_configs['obstacle'] = configs['obstacle']
         env_configs['robotRadius'] = configs['robotRadius']

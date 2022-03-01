@@ -38,7 +38,7 @@ If you like this work or use in your scientific projects, please use the referen
   <img src=GoalSearch.gif>
 </p>
 
-This simulation examplifies how the "Planning" idiom can be used to find goals in an environment. The simulation builds upon the pure "Exploration" example, by implementing a fallback to exploration whenever the goal is not in sight. Futhermore, this simulation also illustrates reflection about impasse. The config for this simulation can be found in 
+This simulation examplifies how the "Planning" idiom can be used to find goals in an environment. The simulation builds upon the pure "Exploration" example, by implementing a fallback to exploration whenever the goal is not in sight as illustrated by the GIF above. The config for this simulation can be found in 
 ```
 probmind/examples/robotPlanning/configs/damgaard22GoalSearch
 ```
@@ -47,6 +47,27 @@ and the simulation can be started via the command:
 $ cd probmind/examples/robotPlanning
 $ conda activate probMind_env_cross_platform
 $ python __main__.py -config_file "configs/damgaard22GoalSearch" -cpu_cores 1
+```
+### No-Change Impasse
+<p align="center">
+  <img src=goal_search_without_impasse_detection.gif>
+</p>
+
+If the robot only takes actions to get closer to its goal as soon it is visible, the robot can end in a "No-Change Impasse". That is, a situation in which no progress is made as illustrated in the GIF above. This simulations illustrates how the "Planning" idiom can be used to detech such a "No-Change Impasse" and take actions to escape from it as illustrated in the GIF below.
+
+<p align="center">
+  <img src=goal_search_with_impasse_detection.gif>
+</p>
+
+The config for the simulation abover WITH impasse detection can be found in
+```
+probmind/examples/robotPlanning/configs/damgaard22GoalSearch_experiment2
+```
+and the simulation can be started via the command:
+```
+$ cd probmind/examples/robotPlanning
+$ conda activate probMind_env_cross_platform
+$ python __main__.py -config_file "configs/damgaard22GoalSearch_experiment2" -cpu_cores 1
 ```
 For more information we refer you to our publication:
 ```
@@ -58,6 +79,7 @@ For more information we refer you to our publication:
 }
 ```
 If you like this work or use in your scientific projects, please use the reference above.
+
 
 
 ## Planning with Multimodal Action Posterior
@@ -101,4 +123,4 @@ $ python __main__.py -cpu_cores 4 -thread_start_ID 12 -total_cluster_threads 16 
 The following is a list of things that could potentially be improved:
 - [ ] implement rotation and FOV in lidar model
 - [ ] Change state to a dict - e.g. z_s_tau["position"]
-- [ ] consider noise on state in the simulator
+- [X] consider noise on state in the simulator

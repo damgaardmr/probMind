@@ -15,6 +15,7 @@ import lzma
 import time
 import sys
 from pathlib import Path
+import tikzplotlib
 
 import yaml
 try:
@@ -193,10 +194,15 @@ def main():
 
             env_multi_robot.render(env)
 
+
             if configs["save_pngs_for_gif"] and  env.time() > frametime*frame_counter:
                 png_DATA_file_path = media_DATA_folder_path + "/" + str(frame_counter) + ".png"
                 plt.savefig(png_DATA_file_path, format='png', bbox_inches = "tight")
                 frame_counter = frame_counter + 1
+
+            if frame_counter == 3:
+                print(png_DATA_file_path.replace(".png",'.tikz'))
+                tikzplotlib.save(png_DATA_file_path.replace(".png",'.tikz'))
 
             if env.are_there_any_collisions() or env.time() >= configs["simulated_time_pr_sim"]:
                 if env.are_there_any_collisions():

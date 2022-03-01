@@ -44,6 +44,7 @@ class Planning(ABC):
         self.params["progress_scale_factor"] = torch.tensor([progress_scale_factor], dtype=torch.float)
         self.params["info_gain_scale_factor"] = torch.tensor([info_gain_scale_factor], dtype=torch.float)
         self.params["Lamda_p_min"] = Lamda_p_min
+        self.P_impasse_threshold = torch.tensor([0.90])
 
         # In case of vanishing gradients try to modify this
         self.information_gradient_multiplier = torch.tensor(information_gradient_multiplier)
@@ -115,11 +116,18 @@ class Planning(ABC):
         P_z_C_accum = torch.tensor([1.], dtype=torch.float)
 
         assignment_probs = torch.ones(self.K) / self.K
-        k = pyro.sample('k', dist.Categorical(assignment_probs), infer={"enumerate": "sequential"})
+        k = pyro.sample('k', dist.Categorical(assignment_probs), infer={"enumerate": "sequential"})  # "sequential", "parallel"
         # k is only used in the guide, but due to Pyro it also needs to be in the model
 
         if self.consider_impasse:
-            P_impasse = torch.tensor([1.0]) - self.__P_z_p_tau(t, p_z_s_t_trace, _p_z_s_Minus[0], decay=1.0)
+            # P_impasse = torch.tensor([1.0]) - self.__P_z_p_tau(t, p_z_s_t_trace, _p_z_s_Minus[0], Lamda_p_l=1.0)
+            P_impasse = torch.tensor([1.0]) - self.__P_z_p_tau(t, p_z_s_t_trace, _p_z_s_Minus[0:len(_p_z_s_Minus)-2], Lamda_p_l=1.0)
+            if P_impasse > self.P_impasse_threshold:
+                print("Impasse detected!! Value: " + str(P_impasse))
+            #if len(_p_z_s_Minus) > 2:
+            #    P_impasse = torch.tensor([1.0]) - self.__P_z_p_tau(t, p_z_s_t_trace, _p_z_s_Minus[0:len(_p_z_s_Minus)-1], Lamda_p_l=1.0)
+            #else:
+            #    P_impasse = torch.tensor([1.0]) - self.__P_z_p_tau(t, p_z_s_t_trace, _p_z_s_Minus[0], decay=1.0)
         else:
             P_impasse = torch.tensor([1.0])  # do not account for impasse
 
@@ -135,7 +143,7 @@ class Planning(ABC):
 
         # fixed number of options with varying probabilities
         assignment_probs = pyro.param('assignment_probs', torch.ones(self.K) / self.K, constraint=constraints.unit_interval)
-        k = pyro.sample('k', dist.Categorical(assignment_probs), infer={"enumerate": "sequential"})
+        k = pyro.sample('k', dist.Categorical(assignment_probs), infer={"enumerate": "sequential"})  # "sequential", "parallel"
         z_a_tauPlus, z_s_tauPlus = self.__WM_planning_step_guide(t + 1, T, k, z_s_t)
         z_s_tauPlus.insert(0, z_s_t)
         return z_a_tauPlus, z_s_tauPlus, k
@@ -161,7 +169,7 @@ class Planning(ABC):
         else:  # intermidiate timesteps
             z_a_tauPlus, z_s_tauPlus, P_z_d_end = self.__WM_planning_step_model(tau + 1, T, k, z_s_tau, p_z_s_Minus, P_z_C_accum, P_impasse)
 
-            self.__WM_planning_logic(tau, T, P_impasse, z_s_tau, p_z_s_tau_trace, p_z_s_Minus, P_z_C_tau, P_z_C_accum, P_z_d_end = P_z_d_end)
+            self.__WM_planning_logic(tau, T, P_impasse, z_s_tau, p_z_s_tau_trace, p_z_s_Minus, P_z_C_tau, P_z_C_accum, P_z_d = P_z_d_end)
 
             z_a_tauPlus.insert(0, z_a_tauMinus1)
             z_s_tauPlus.insert(0, z_s_tau)
@@ -185,41 +193,27 @@ class Planning(ABC):
             z_s_tauPlus.insert(0, z_s_tau)
             return z_a_tauPlus, z_s_tauPlus
 
-    def __WM_planning_logic(self, tau, T, P_impasse, z_s_tau, p_z_s_tau_trace, p_z_s_Minus, P_z_C_tau, P_z_C_accum, P_z_d_end = None):
+    def __WM_planning_logic(self, tau, T, P_impasse, z_s_tau, p_z_s_tau_trace, p_z_s_Minus, P_z_C_tau, P_z_C_accum, P_z_d = None):
         if tau >= T:  # last timestep - consider if goal state is reach
-            if self.consider_impasse and P_impasse > torch.tensor([0.90]):  # if the probability of being in an impasse is high, then explore
+            if self.consider_impasse and P_impasse > self.P_impasse_threshold:  # if the probability of being in an impasse is high, then explore
                 P_z_d = torch.tensor([0.0])
             else:  # calculate the pseudo probability of being in the goal state
                 P_z_d = self.__P_z_d_tau(tau, p_z_s_tau_trace, self.p_z_g)
 
-            if P_z_d < torch.tensor([0.10]):  # if pseudo probability of being close to the goal is small, then explore
-                # calculate the (pseudo) probability of the state giving new information
-                P_z_i = self.__P_z_i_tau(tau, z_s_tau)
+        if P_z_d is None or P_z_d < torch.tensor([0.30]):  # if pseudo probability of being close to the goal is small, then explore
+            # calculate the (pseudo) probability of the state giving new information
+            P_z_i = self.__P_z_i_tau(tau, z_s_tau)
 
-                # calculate the (pseudo) probability of the state yielding progress compared to previous states
-                P_z_p = self.__P_z_p_tau(tau, p_z_s_tau_trace, p_z_s_Minus)
-            else:  # focus on achieving the goal
-                P_z_i = torch.tensor([0.0])
-                P_z_p = torch.tensor([0.0])
+            # calculate the (pseudo) probability of the state yielding progress compared to previous states
+            P_z_p = self.__P_z_p_tau(tau, p_z_s_tau_trace, p_z_s_Minus)
+        else:  # focus on achieving the goal
+            P_z_i = torch.tensor([0.0])
+            P_z_p = torch.tensor([0.0])
 
-            with scope(prefix=str(tau)):
-                pyro.sample("x_A", self.__p_z_A_tau(P_z_d, P_z_p, P_z_i, P_z_C_accum), obs=torch.tensor([1.], dtype=torch.float))
+        with scope(prefix=str(tau)):
+            pyro.sample("x_A", self.__p_z_A_tau(P_z_d, P_z_p, P_z_i, P_z_C_accum), obs=torch.tensor([1.], dtype=torch.float))
 
-            return P_z_d
-
-        else:  # intermidiate timesteps
-            if P_z_d_end < torch.tensor([0.10]):  # if pseudo probability of being close to the goal is small, then explore
-                # calculate the (pseudo) probability of the state giving new information
-                P_z_i = self.__P_z_i_tau(tau, z_s_tau)
-
-                # calculate the (pseudo) probability of the state yielding progress compared to previous states
-                P_z_p = self.__P_z_p_tau(tau, p_z_s_tau_trace, p_z_s_Minus)
-            else:  # focus on achieving the goal
-                P_z_i = torch.tensor([0.0])
-                P_z_p = torch.tensor([0.0])
-
-            with scope(prefix=str(tau)):
-                pyro.sample("x_A", self.__p_z_A_tau(P_z_d_end, P_z_p, P_z_i, P_z_C_accum), obs=torch.tensor([1.], dtype=torch.float))
+        return P_z_d
 
     def __P_z_A_tau(self, P_z_d, P_z_p, P_z_i, P_z_c):
         P_z_A1 = probabilistic_OR_independent([P_z_i, P_z_p, P_z_d])  # <-- the order of args might matter!
@@ -253,19 +247,20 @@ class Planning(ABC):
 
         return P_z_d
 
-    def __P_z_p_tau(self, tau, p_z_s_tau_trace, p_z_s_Minus, decay=None):
+    def __P_z_p_tau(self, tau, p_z_s_tau_trace, p_z_s_Minus, Lamda_p_l=None):
         # make some optimization + add the different parameters to the param dict!
         if not isinstance(p_z_s_Minus, pyro.poutine.trace_struct.Trace):  # check if it is only a single trace or a list
-            if self.L > len(p_z_s_Minus):
-                _L = len(p_z_s_Minus)
-            else:
-                _L = self.L
+            # if self.L > len(p_z_s_Minus):
+            #     _L = len(p_z_s_Minus)
+            # else:
+            #     _L = self.L
+            _L = len(p_z_s_Minus)
             P_z_p_list = []
             for l in range(_L):  # optimize!!!
                 idx = len(p_z_s_Minus) - l
                 KL_estimate = KL_point_estimate(tau, p_z_s_tau_trace, p_z_s_Minus[idx - 1])
 
-                if decay is None:
+                if Lamda_p_l is None:
                     if _L > 1:
                         Lamda_p_l = 1 - (1 - self.params["Lamda_p_min"]) * (_L - l) / _L
                     else:
