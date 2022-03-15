@@ -1,0 +1,50 @@
+# ######################  overall Settings and for __Main__.py ######################
+N_simulations: 10
+simulated_time_pr_sim: 200
+stop_after_first_goal_is_reached: True
+
+# size of robots as a radius of minimum spanning disk 
+r_radius: 0.2
+r_diviation_percentage: 0.00
+# https://emanual.robotis.com/docs/en/platform/turtlebot3/specifications/
+# the wheels on the robot is placed in the front. The robot is 138mm long and 178mm wide, thus asssuming the wheel to be placed in the front an conservative estimate is
+# from https://www.robotis.us/turtlebot-3-burger-us/ a more appropriate value would be 105 mm
+
+save_pngs_for_gif: True
+framerate: 24  # maximum! it might be less if the computational burden is high!
+
+# ###################### Settings for agent/robots ######################
+T_delta: 4  # number of timesteps predicted into the future
+t_delta: 1.0  # seconds pr. timestep
+t_buffer: 0.03  # a buffer used when deciding if there is time to calculate one more time
+svi_epochs: 10
+
+K: 1  # number of modes of the posterior path distribution
+desirability_scale_factor: 2.0  # decreased to account for the larger plan_dist
+constraint_scale_factor: 5.0
+
+N_posterior_samples: 25
+
+# learning rates of the Adam optimizer
+lr: 0.05  # general learning rate
+lr_a_alpha_trans: 0.001
+lr_a_beta_trans: 0.3  # the difference in learning rates of translational action params give a preference for driving forward!
+lr_a_alpha_rot: 0.2
+lr_a_beta_rot: 0.2
+
+a_support: [0.44, 5.68]  # [2*0.22,2*2.84] [m/s,rad/s] turtlebot3 burger
+model_error: [0.05,0.05,0.10] 
+
+alpha_init: [1000., 1000.]
+beta_init: [1000., 1000.]
+
+
+# ###################### Settings for environment ######################
+scenario: 2  # 0: "antipodal circle", 1: "antipodal circle with random initialization", 2: 0: "antipodal circle swapping"
+goal_radius: 0.1
+plan_dist: 4
+receive_distance: 2.0
+pos_error: 0.12  # 3*0.04 standard diviations in meters
+angle_error: 2.5  # 3 standard diviations in degree
+estimation_scale_factor: 1  # scales specified measurement covariance to simulate noise in the estimated pose
+render_receive_distance: False

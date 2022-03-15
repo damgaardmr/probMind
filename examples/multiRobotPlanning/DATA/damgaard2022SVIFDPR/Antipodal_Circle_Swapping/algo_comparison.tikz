@@ -1,0 +1,239 @@
+% This file was created with tikzplotlib v0.9.16.
+\begin{tikzpicture}
+
+\definecolor{color0}{rgb}{0.203921568627451,0.658823529411765,0.325490196078431}
+\definecolor{color1}{rgb}{0.984313725490196,0.737254901960784,0.0196078431372549}
+
+\begin{groupplot}[group style={group size=3 by 1,horizontal sep=0.1\linewidth}]
+\nextgroupplot[
+xmode=log,
+xtick={2,4,8,16,32},
+xticklabels={2,4,8,16,32},
+width=0.3333333333333333\linewidth,
+tick align=outside,
+tick pos=left,
+x grid style={white!69.0196078431373!black},
+xlabel={Number of Robots [1]},
+xmajorgrids,
+xmin=1.89162920156097, xmax=36.7583473599051,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ylabel={NTD [m]},
+ymajorgrids,
+ymin=0.953164556962025, ymax=1.98354430379747,
+ytick style={color=black}
+]
+\path [draw=color0, fill=color0, opacity=0.25]
+(axis cs:2,1.03164556962025)
+--(axis cs:2,1.03164556962025)
+--(axis cs:4,1.17721518987342)
+--(axis cs:8,1.44303797468354)
+--(axis cs:16,1.62025316455696)
+--(axis cs:32,1.93670886075949)
+--(axis cs:32,1.81012658227848)
+--(axis cs:32,1.81012658227848)
+--(axis cs:16,1.56962025316456)
+--(axis cs:8,1.29113924050633)
+--(axis cs:4,1.17721518987342)
+--(axis cs:2,1.03164556962025)
+--cycle;
+
+\path [draw=color1, fill=color1, opacity=0.25]
+(axis cs:2,1.00434635616176)
+--(axis cs:2,1.0151020849875)
+--(axis cs:4,1.08274215873158)
+--(axis cs:8,1.17613376769145)
+--(axis cs:16,1.26283717569419)
+--(axis cs:32,1.46932318308178)
+--(axis cs:32,1.24398514933026)
+--(axis cs:32,1.24398514933026)
+--(axis cs:16,1.12034399578426)
+--(axis cs:8,1.06212053799617)
+--(axis cs:4,1.02550659365584)
+--(axis cs:2,1.00434635616176)
+--cycle;
+
+\addplot [thick, black, dashed]
+table {%
+2 1
+32 1
+};
+\addplot [semithick, color0]
+table {%
+2 1.03164556962025
+4 1.17721518987342
+8 1.36708860759494
+16 1.59493670886076
+32 1.87341772151899
+};
+\addplot [semithick, color1]
+table {%
+2 1.00972422057463
+4 1.05412437619371
+8 1.11912715284381
+16 1.19159058573922
+32 1.35665416620602
+};
+
+\nextgroupplot[
+xmode=log,
+xtick={2,4,8,16,32},
+xticklabels={2,4,8,16,32},
+width=0.3333333333333333\linewidth,
+tick align=outside,
+tick pos=left,
+x grid style={white!69.0196078431373!black},
+xlabel={Number of Robots [1]},
+xmajorgrids,
+xmin=1.89162920156097, xmax=36.7583473599051,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ylabel={NTT [s]},
+ymajorgrids,
+ymin=0.877848101265823, ymax=3.56518987341772,
+ytick style={color=black}
+]
+\path [draw=color0, fill=color0, opacity=0.25]
+(axis cs:2,1.05822784810127)
+--(axis cs:2,1.06835443037975)
+--(axis cs:4,1.32151898734177)
+--(axis cs:8,1.77215189873418)
+--(axis cs:16,2.17721518987342)
+--(axis cs:32,3.44303797468354)
+--(axis cs:32,2.83544303797468)
+--(axis cs:32,2.83544303797468)
+--(axis cs:16,2.07594936708861)
+--(axis cs:8,1.51898734177215)
+--(axis cs:4,1.31139240506329)
+--(axis cs:2,1.05822784810127)
+--cycle;
+
+\path [draw=color1, fill=color1, opacity=0.25]
+(axis cs:2,1.22989212580805)
+--(axis cs:2,1.25188442341656)
+--(axis cs:4,1.57934132344913)
+--(axis cs:8,1.76867646952567)
+--(axis cs:16,1.99933595933664)
+--(axis cs:32,2.74599434085598)
+--(axis cs:32,2.05306800514976)
+--(axis cs:32,2.05306800514976)
+--(axis cs:16,1.63445718099967)
+--(axis cs:8,1.43857020779907)
+--(axis cs:4,1.24496816252959)
+--(axis cs:2,1.22989212580805)
+--cycle;
+
+\addplot [thick, black, dashed]
+table {%
+2 1
+32 1
+};
+\addplot [semithick, color0]
+table {%
+2 1.06329113924051
+4 1.31645569620253
+8 1.64556962025316
+16 2.12658227848101
+32 3.13924050632911
+};
+\addplot [semithick, color1]
+table {%
+2 1.24088827461231
+4 1.41215474298936
+8 1.60362333866237
+16 1.81689657016815
+32 2.39953117300287
+};
+
+\nextgroupplot[
+xmode=log,
+xtick={2,4,8,16,32},
+xticklabels={2,4,8,16,32},
+width=0.3333333333333333\linewidth,
+legend cell align={left},
+legend to name=CommonLegend,
+legend style={
+  fill opacity=0.8,
+  nodes={scale=0.75, transform shape},
+  %%font=\tiny,
+  draw opacity=1,
+  text opacity=1,
+  at={(0.0,-0.0)},
+  anchor=north,
+  legend columns=-1,
+  /tikz/every even column/.append style={column sep=0.5cm},
+  draw=white!80!black
+  },
+legend style={fill opacity=0.8, draw opacity=1, text opacity=1, draw=white!80!black},
+tick align=outside,
+tick pos=left,
+x grid style={white!69.0196078431373!black},
+xlabel={Number of Robots [1]},
+xmajorgrids,
+xmin=1.89162920156097, xmax=36.7583473599051,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ylabel={MSD [m]},
+ymajorgrids,
+ymin=-0.035, ymax=0.735,
+ytick style={color=black}
+]
+\path [draw=color0, fill=color0, opacity=0.25]
+(axis cs:2,0.6)
+--(axis cs:2,0.7)
+--(axis cs:4,0.27)
+--(axis cs:8,0.24)
+--(axis cs:16,0.201)
+--(axis cs:32,0.182)
+--(axis cs:32,0.178)
+--(axis cs:32,0.178)
+--(axis cs:16,0.199)
+--(axis cs:8,0.2)
+--(axis cs:4,0.21)
+--(axis cs:2,0.6)
+--cycle;
+
+\path [draw=color1, fill=color1, opacity=0.25]
+(axis cs:2,0.173654585608596)
+--(axis cs:2,0.27566870955921)
+--(axis cs:4,0.310345449101202)
+--(axis cs:8,0.179986379349163)
+--(axis cs:16,0.149688366015842)
+--(axis cs:32,0.10269718023426)
+--(axis cs:32,0.0466570066509484)
+--(axis cs:32,0.0466570066509484)
+--(axis cs:16,0.0918046009310041)
+--(axis cs:8,0.131102382713923)
+--(axis cs:4,0.224877403452776)
+--(axis cs:2,0.173654585608596)
+--cycle;
+
+\addplot [thick, black, dashed]
+table {%
+2 0
+32 0
+};
+\addlegendentry{Theoretical Minimum}
+\addplot [semithick, color0]
+table {%
+2 0.65
+4 0.24
+8 0.22
+16 0.2
+32 0.18
+};
+\addlegendentry{B-UAVC}
+\addplot [semithick, color1]
+table {%
+2 0.224661647583903
+4 0.267611426276989
+8 0.155544381031543
+16 0.120746483473423
+32 0.0746770934426041
+};
+\addlegendentry{SVMMN}
+\end{groupplot}
+
+\coordinate (c3) at ($(current bounding box.south east)!.5!(current bounding box.south west)$);
+\node[below] at (c3 |- current bounding box.south){\pgfplotslegendfromname{CommonLegend}};
+\end{tikzpicture}

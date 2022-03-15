@@ -1,0 +1,52 @@
+% This file was created with tikzplotlib v0.9.16.
+\begin{tikzpicture}
+
+\definecolor{color0}{rgb}{0.258823529411765,0.52156862745098,0.956862745098039}
+
+\begin{axis}[
+width=1.0\linewidth,
+height=0.64\linewidth,
+clip marker paths=true,
+scaled x ticks=false,
+tick align=outside,
+tick pos=left,
+x grid style={white!69.0196078431373!black},
+xlabel={Messages Received [1]},
+xmin=-1.9, xmax=28.9,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ylabel={Count [1]},
+ymin=0, ymax=1023076.95,
+ytick style={color=black}
+]
+\draw[draw=none,fill=color0] (axis cs:-0.5,0) rectangle (axis cs:0.5,5451);
+\draw[draw=none,fill=color0] (axis cs:0.5,0) rectangle (axis cs:1.5,15835);
+\draw[draw=none,fill=color0] (axis cs:1.5,0) rectangle (axis cs:2.5,72814);
+\draw[draw=none,fill=color0] (axis cs:2.5,0) rectangle (axis cs:3.5,199136);
+\draw[draw=none,fill=color0] (axis cs:3.5,0) rectangle (axis cs:4.5,974359);
+\draw[draw=none,fill=color0] (axis cs:4.5,0) rectangle (axis cs:5.5,270320);
+\draw[draw=none,fill=color0] (axis cs:5.5,0) rectangle (axis cs:6.5,205995);
+\draw[draw=none,fill=color0] (axis cs:6.5,0) rectangle (axis cs:7.5,140460);
+\draw[draw=none,fill=color0] (axis cs:7.5,0) rectangle (axis cs:8.5,143473);
+\draw[draw=none,fill=color0] (axis cs:8.5,0) rectangle (axis cs:9.5,133160);
+\draw[draw=none,fill=color0] (axis cs:9.5,0) rectangle (axis cs:10.5,145328);
+\draw[draw=none,fill=color0] (axis cs:10.5,0) rectangle (axis cs:11.5,112843);
+\draw[draw=none,fill=color0] (axis cs:11.5,0) rectangle (axis cs:12.5,83487);
+\draw[draw=none,fill=color0] (axis cs:12.5,0) rectangle (axis cs:13.5,82686);
+\draw[draw=none,fill=color0] (axis cs:13.5,0) rectangle (axis cs:14.5,62973);
+\draw[draw=none,fill=color0] (axis cs:14.5,0) rectangle (axis cs:15.5,50196);
+\draw[draw=none,fill=color0] (axis cs:15.5,0) rectangle (axis cs:16.5,53009);
+\draw[draw=none,fill=color0] (axis cs:16.5,0) rectangle (axis cs:17.5,58159);
+\draw[draw=none,fill=color0] (axis cs:17.5,0) rectangle (axis cs:18.5,63320);
+\draw[draw=none,fill=color0] (axis cs:18.5,0) rectangle (axis cs:19.5,45671);
+\draw[draw=none,fill=color0] (axis cs:19.5,0) rectangle (axis cs:20.5,27018);
+\draw[draw=none,fill=color0] (axis cs:20.5,0) rectangle (axis cs:21.5,22341);
+\draw[draw=none,fill=color0] (axis cs:21.5,0) rectangle (axis cs:22.5,16625);
+\draw[draw=none,fill=color0] (axis cs:22.5,0) rectangle (axis cs:23.5,10673);
+\draw[draw=none,fill=color0] (axis cs:23.5,0) rectangle (axis cs:24.5,7691);
+\draw[draw=none,fill=color0] (axis cs:24.5,0) rectangle (axis cs:25.5,2936);
+\draw[draw=none,fill=color0] (axis cs:25.5,0) rectangle (axis cs:26.5,615);
+\draw[draw=none,fill=color0] (axis cs:26.5,0) rectangle (axis cs:27.5,24);
+\end{axis}
+
+\end{tikzpicture}

@@ -3,13 +3,22 @@ import os
 
 
 def main():
-    deleteData = False
+    deleteData = True
     speedup = 1
     FILE_TYPE = ".gif"
     FILE_TYPE = ".mp4"
-    save_folder = "../date_2022_01_27_time_13_06_03/MEDIA"
-    
-    for simID in range(1,51):
+
+    #save_folder = "../damgaard2022SVIFDPR/Antipodal_Circle/MEDIA"
+    #n_sims = 50
+
+    #save_folder = "../damgaard2022SVIFDPR/Antipodal_Circle_Swapping/SVMMN/2/MEDIA"
+    #save_folder = "../damgaard2022SVIFDPR/Antipodal_Circle_Swapping/SVMMN/4/MEDIA"
+    #save_folder = "../damgaard2022SVIFDPR/Antipodal_Circle_Swapping/SVMMN/8/MEDIA"
+    #save_folder = "../damgaard2022SVIFDPR/Antipodal_Circle_Swapping/SVMMN/16/MEDIA"
+    save_folder = "../damgaard2022SVIFDPR/Antipodal_Circle_Swapping/SVMMN/32/MEDIA"
+    n_sims = 10
+
+    for simID in range(1,n_sims+1):
         simName = "pngs_sim_" + str(simID)
         MEDIA_data_folder = save_folder + "/" + simName
         FILE_NAME = simName + "_" + str(speedup) + "x"

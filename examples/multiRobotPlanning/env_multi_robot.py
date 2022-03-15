@@ -6,7 +6,7 @@ import matplotlib.patches as patches
 from matplotlib.legend_handler import HandlerPatch
 import matplotlib
 matplotlib.use('TkAgg') 
-
+import warnings
 
 import time
 
@@ -71,7 +71,7 @@ class multiRobotEnv(gym.Env):
         # self.observation_space = self._get_observation_space()
 
         self.real_time_factor = configs["real_time_factor"]
-
+        self.scenario = configs["scenario"]
         self.N_Robots = N_Robots
         self.plan_dist = configs["plan_dist"]
         self.goal_radius = configs["goal_radius"]
@@ -95,7 +95,12 @@ class multiRobotEnv(gym.Env):
         self.meas_L = np.linalg.cholesky(self.meas_cov)  # Cholesky decomposition
         self.estimation_scale_factor = configs["estimation_scale_factor"]
 
+        self.is_sim_running = False
+
         self.reset()
+
+    def get_sim_status(self):
+        return self.is_sim_running
 
     def get_real_time_factor(self):
         return self.real_time_factor
@@ -140,28 +145,53 @@ class multiRobotEnv(gym.Env):
                 _ = True
 
     def send_msg(self, ID, msg):
-        self.msgs[ID] = msg
+        if self.is_sim_running:
+            self.msgs[ID] = msg
 
     def generate_plan(self):
         plans = [None] * self.N_Robots
-        angle_diff = pi/self.N_Robots
+        if self.scenario == 0 or self.scenario == 1:
+            angle_diff = pi/self.N_Robots  # antipodal switching
 
-        for n in range(self.N_Robots):
-            plan = []
-            x1 = self.plan_dist*np.cos(angle_diff*n)
-            y1 = self.plan_dist*np.sin(angle_diff*n)
-            plan.append([x1,y1])
+            for n in range(self.N_Robots):
+                plan = []
+                x1 = self.plan_dist*np.cos(angle_diff*n)
+                y1 = self.plan_dist*np.sin(angle_diff*n)
+                plan.append([x1,y1])
 
-            x2 = self.plan_dist*np.cos(angle_diff*n+pi)
-            y2 = self.plan_dist*np.sin(angle_diff*n+pi)
-            plan.append([x2,y2])
-            plans[n] = plan
+                x2 = self.plan_dist*np.cos(angle_diff*n+pi)
+                y2 = self.plan_dist*np.sin(angle_diff*n+pi)
+                plan.append([x2,y2])
+                plans[n] = plan
+
+        elif self.scenario == 2:
+            angle_diff = pi/(self.N_Robots/2)  # circle-swapping antipodal switching
+
+            for n in range(self.N_Robots):
+                plan = []
+                x1 = self.plan_dist*np.cos(angle_diff*n)
+                y1 = self.plan_dist*np.sin(angle_diff*n)
+                plan.append([x1,y1])
+
+                x2 = self.plan_dist*np.cos(angle_diff*n+pi)
+                y2 = self.plan_dist*np.sin(angle_diff*n+pi)
+                plan.append([x2,y2])
+                plans[n] = plan
+        else:
+            raise NameError('Unknown simulator scenario')
 
         return plans
 
     def reset_poses(self):
         for n in range(self.N_Robots):
-            idx = np.random.randint(0, high=len(self.plans[n]))
+            if self.scenario == 1:
+                idx = np.random.randint(0, high=len(self.plans[n]))  # random initial pose
+            if self.scenario == 0 or self.scenario == 2:
+                if self.N_Robots > 2:
+                    idx = n % 2  # evenly spaced initial pose
+                else:
+                    idx = 0
+
             if idx + 1 >= len(self.plans[n]):
                 self.next_goal[n] = 0
             else:
@@ -178,10 +208,11 @@ class multiRobotEnv(gym.Env):
             self.pose_est[n] = np.random.multivariate_normal([x,y,heading], self.meas_cov / self.estimation_scale_factor)    # simulate noise in the estimated pose
 
     def set_next_goal(self, robot_ID):
-        if self.next_goal[robot_ID] + 1 >= len(self.plans[robot_ID]):
-            self.next_goal[robot_ID] = 0
-        else:
-            self.next_goal[robot_ID] = self.next_goal[robot_ID] + 1
+        if self.next_goal[robot_ID] is not None:  # else undefined behaviour
+            if self.next_goal[robot_ID] + 1 >= len(self.plans[robot_ID]):
+                self.next_goal[robot_ID] = 0
+            else:
+                self.next_goal[robot_ID] = self.next_goal[robot_ID] + 1
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -202,10 +233,12 @@ class multiRobotEnv(gym.Env):
     def get_current_goals(self):
         return self.next_goal
 
+    def get_acts(self):
+        return self.act
+
     def reset(self):
+        self.is_sim_running = False
         print("######################## Resetting environment ########################")
-        self.sim_time = 0
-        self.sim_time_start = time.time()
         self.r_robots = np.random.uniform(low=self.r_radius*(1-self.r_diviation), high=self.r_radius*(1+self.r_diviation), size=self.N_Robots)
         self.pose = [None] * self.N_Robots
         self.pose_est = [None] * self.N_Robots
@@ -216,6 +249,10 @@ class multiRobotEnv(gym.Env):
         self.N_msgs_received = [[] for _ in range(self.N_Robots)]
         self.reset_poses()
         self.pos_samples = [None] * self.N_Robots
+        time.sleep(0.5)
+        self.sim_time = 0
+        self.sim_time_start = time.time()
+        self.is_sim_running = True
 
     def receive_msgs(self, robot_ID):
         msgs_received = []
@@ -239,40 +276,62 @@ class multiRobotEnv(gym.Env):
         return self.r_robots
 
     def step(self, action, robot_ID):
+        try:
+            self.act[robot_ID] = action
 
-        self.act[robot_ID] = action
+            if self.next_goal[robot_ID] is None:  #goal not set yet
+                print("Goal not set...", flush=True)
 
-        done = self._check_if_robot_has_reach_goal_zone(robot_ID)
-        if done:
-            self.set_next_goal(robot_ID)
+            done = self._check_if_robot_has_reach_goal_zone(robot_ID)
+            if done:
+                self.set_next_goal(robot_ID)
 
-        msgs = self.receive_msgs(robot_ID)
+            msgs = self.receive_msgs(robot_ID)
 
-        if len(self.pose[robot_ID]) != 2:
-            self.pose_est[robot_ID] = np.random.multivariate_normal(self.pose[robot_ID], self.meas_cov / self.estimation_scale_factor)    # simulate noise in the estimated pose
-        else:
-            self.pose_est[robot_ID] =  self.pose[robot_ID]
+            if len(self.pose[robot_ID]) != 2:
+                self.pose_est[robot_ID] = np.random.multivariate_normal(self.pose[robot_ID], self.meas_cov / self.estimation_scale_factor)    # simulate noise in the estimated pose
+            else:
+                self.pose_est[robot_ID] =  self.pose[robot_ID]
 
-        obs = [[self.pose_est[robot_ID], self.meas_L],
-               self.plans[robot_ID][self.next_goal[robot_ID]],
-               msgs]
+            if self.next_goal[robot_ID] is None:  #goal not set yet
+                goal = self.pose_est[robot_ID]
+            else:
+                goal = self.plans[robot_ID][self.next_goal[robot_ID]]
 
-        reward = 0.0
-        info = {'is_success': done, 'is_crashed': self.crash_flag[robot_ID], 'sim_time': self.sim_time}
-        return obs, reward, done, info
+            obs = [[self.pose_est[robot_ID], self.meas_L],
+                    goal,
+                    msgs]
+
+            reward = 0.0
+            info = {'is_success': done, 'is_crashed': self.crash_flag[robot_ID], 'sim_time': self.sim_time}
+            return obs, reward, done, info
+        except:  
+            # an Exception sometime occur when resetting the env, however it is not really a problem...
+            # it seems to have something to do with the "Goal not set..." printout
+            warnings.warn("Exception encountered for robot with ID: " + str(robot_ID))
+            obs = [[[0, 0, 0], self.meas_L],
+                    [0, 0],
+                    []]
+            reward = 0.0
+            info = {'is_success': False, 'is_crashed': False, 'sim_time': self.sim_time}
+            return obs, reward, done, info
 
     def close(self):
         pass
 
     def _check_if_robot_has_reach_goal_zone(self, robot_ID):
-        dist_vector = np.array([self.pose[robot_ID][0] - self.plans[robot_ID][self.next_goal[robot_ID]][0],
-                                self.pose[robot_ID][1] - self.plans[robot_ID][self.next_goal[robot_ID]][1]])
-        goal_dist = np.linalg.norm(dist_vector)
-
-        if goal_dist <= self.goal_radius:
-            return True
-        else:
+        if self.next_goal[robot_ID] is None:
+            print("'next_goal' of robot with ID" + str(robot_ID) + " is None")
             return False
+        else:
+            dist_vector = np.array([self.pose[robot_ID][0] - self.plans[robot_ID][self.next_goal[robot_ID]][0],
+                                    self.pose[robot_ID][1] - self.plans[robot_ID][self.next_goal[robot_ID]][1]])
+            goal_dist = np.linalg.norm(dist_vector)
+
+            if goal_dist <= self.goal_radius:
+                return True
+            else:
+                return False
 
     def _get_action_space(self):
         # action_space = spaces.Box(np.float32(np.array([-1, -1, -1])), np.float32(np.array([1, 1, 1])), dtype='float32')
@@ -363,6 +422,8 @@ def render(env, mode='human', saveFolder=""):
                                             width=r_robots[n]/4,zorder=11,color="black")
             ax.add_patch(robotArrowPatch)
             scatter = plt.scatter(pose_est[n][0], pose_est[n][1], marker="+", color="black", zorder=15, label='Estimated Mean')
+
+            ax.annotate(str(n), (pose[n][0], pose[n][1]+r_robots[n]*1.15), zorder=16)
 
             if color_counter == len(list(colors.values()))-1:
                 color_counter = 0
