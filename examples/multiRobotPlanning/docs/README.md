@@ -9,11 +9,18 @@ These simulations illustrates the use of the "Planning" idiom for multi robot na
 
 The goal of each robot is to navigate between two alternating goal zones without colliding with the other robots. To avoid collsions the robots sends messages with their current plan to the other robots wihtin a certain distance. The algorithmic details are descriped in our publication:
 ```
-@unpublished{damgaard2022SVIFDPR,
-      title={Study of Variational Inference for Flexible Distributed Probabilistic Robotics}, 
-      author={Malte R. Damgaard and Rasmus Pedersen and Thomas Bak},
-      year={2022},
-      note={Submitted}
+@Article{robotics11020038,
+AUTHOR = {Damgaard, Malte Rørmose and Pedersen, Rasmus and Bak, Thomas},
+TITLE = {Study of Variational Inference for Flexible Distributed Probabilistic Robotics},
+JOURNAL = {Robotics},
+VOLUME = {11},
+YEAR = {2022},
+NUMBER = {2},
+ARTICLE-NUMBER = {38},
+URL = {https://www.mdpi.com/2218-6581/11/2/38},
+ISSN = {2218-6581},
+ABSTRACT = {By combining stochastic variational inference with message passing algorithms, we show how to solve the highly complex problem of navigation and avoidance in distributed multi-robot systems in a computationally tractable manner, allowing online implementation. Subsequently, the proposed variational method lends itself to more flexible solutions than prior methodologies. Furthermore, the derived method is verified both through simulations with multiple mobile robots and a real world experiment with two mobile robots. In both cases, the robots share the operating space and need to cross each other&rsquo;s paths multiple times without colliding.},
+DOI = {10.3390/robotics11020038}
 }
 ```
 If you like this work or use it in your scientific projects, please use the reference above. The config for the simulations detailed in the above publication can be found in 
