@@ -24,11 +24,15 @@ $ python __main__.py -config_file "configs/damgaard22Exploration" -cpu_cores 1
 ```
 For more information we refer you to our publication:
 ```
-@unpublished{damgaard2022AKS,
-      title={A Probabilistic Programming Idiom for Active Knowledge Search}, 
-      author={Malte R. Damgaard and Rasmus Pedersen and Thomas Bak},
-      year={2022},
-      note={Submitted}
+@proceedings{damgaard2022AKS,
+  editor =       {Malte R. Damgaard and Rasmus Pedersen and Thomas Bak},
+  title =        {A Probabilistic Programming Idiom for Active Knowledge Search}, 
+  booktitle =    {2022 IEEE World Congress on Computational Intelligence Proceedings},
+  publisher =    {IEEE}
+  venue =        {Padua, Italy},
+  month =        {July},
+  year =         {2022},
+  isbn =         {978-1-7281-8671-9},
 }
 ```
 If you like this work or use in your scientific projects, please use the reference above.
