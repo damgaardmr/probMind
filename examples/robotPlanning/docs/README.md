@@ -124,3 +124,7 @@ The following is a list of things that could potentially be improved:
 - [ ] implement rotation and FOV in lidar model
 - [ ] Change state to a dict - e.g. z_s_tau["position"]
 - [X] consider noise on state in the simulator
+
+
+## Collaboration/Contributions/Questions
+If you would like to collaborate on this project or anything related, have any questions, or make contributions to the project, feel free to reach out to [Malte R. Damgaard](https://vbn.aau.dk/da/persons/134312) prefeerable via [email](mailto:mrd@es.aau.dk?subject=[GitHub]%20The%20ProbMind%20Project)
