@@ -2,15 +2,21 @@
 
 The goal of this project is to develope a series of generally applicable and reuseable code fragments of probabilistic programs, what we refer to as probabilistic idioms, for use in cognitive robotics. For an extensive introduction to the background behind this project please consult
 ```
-@misc{damgaard2021idiomatic,
-      title={Toward an Idiomatic Framework for Cognitive Robotics}, 
-      author={Malte R. Damgaard and Rasmus Pedersen and Thomas Bak},
-      year={2021},
-      eprint={2111.13027},
-      archivePrefix={arXiv},
-      primaryClass={cs.RO},
-      url={https://arxiv.org/abs/2111.13027}
+@Article{Damgaard2022,
+  author =    {Damgaard, Malte R{\o}rmose and Pedersen, Rasmus and Bak, Thomas},
+  title =     {Toward an idiomatic framework for cognitive robotics},
+  journal =   {Patterns},
+  year =      {2022},
+  month =     {Jul},
+  day =       {08},
+  publisher = {Elsevier},
+  volume =    {3},
+  number =    {7},
+  issn =      {2666-3899},
+  doi =       {10.1016/j.patter.2022.100533},
+  url =       {https://doi.org/10.1016/j.patter.2022.100533}
 }
+
 ```
 If you like this work or use in your scientific projects, please use the reference above.
 
