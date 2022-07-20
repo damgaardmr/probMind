@@ -24,8 +24,8 @@ $ conda env create -f probmind/conda_environment_cross_platform.yml
 ```
 This will install a conda environment called "probMind_env_cross_platform" with the necessary dependencies.
 
-## Collaboration/Contributions
-If you would like to collaborate on this project or anything related, or make contributions to the project, feel free to reach out to [Malte R. Damgaard](https://vbn.aau.dk/da/persons/134312) prefeerable via [email](mailto:mrd@es.aau.dk?subject=[GitHub]%20The%20ProbMind%20Project)
+## Collaboration/Contributions/Questions
+If you would like to collaborate on this project or anything related, have any questions, or make contributions to the project, feel free to reach out to [Malte R. Damgaard](https://vbn.aau.dk/da/persons/134312) prefeerable via [email](mailto:mrd@es.aau.dk?subject=[GitHub]%20The%20ProbMind%20Project)
 
 ## Background
 For a long time it has been recognized that a hybrid symbolic-subsymbolic approach is probably the best for developing systems with general intelligent autonomous behavior. Until now, incorporation of sub-symbolic probabilistic processing have been limited due to the available inference algorithms and the computational cost associated with these. Therefore, often problem specific code optimizations have been necessary to obtain computationally tractable systems. However, with the latest advancements in probabilistic programming, such probabilistic processing have become way more tractable and flexible. As a result, this project seeks to implement generally applicable and reuseable code fragments of probabilistic programs for use in cognitive robotics. In order to do this, this project is built around the probabilistic programming language [Pyro](https://pyro.ai/).
