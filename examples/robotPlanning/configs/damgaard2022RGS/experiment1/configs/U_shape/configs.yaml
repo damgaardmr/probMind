@@ -1,0 +1,62 @@
+G: 1
+K: 1
+L: 5
+M: 2
+Map_order: true
+N: 3
+N_posterior_samples: 30
+P_z_C_scale: 100.0
+T_delta: 3
+a_support:
+- 2
+- 2
+consider_impasse: true
+constraint_subsampling: 16
+desirability_scale_factor: 5.0
+distance_buffer: 0.05
+gamma: 0.2
+goalPosition:
+  x: 5.5
+  y: 3.5
+goal_zone_est_error_3_sigma: 0.1
+goal_zone_radius: 0.5
+imageScaling: 2
+info_gain_scale_factor: 0.0001
+information_gain_subsampling: 1
+initial_3_sigma: 0.2
+initial_lr: 0.05
+json_dir: ../../../../robotPlanning/configs/damgaard22GoalSearch_experiment2/maps/
+lidar:
+  P_hit: 0.99999
+  P_max: 0.0
+  P_rand: 1.0e-05
+  P_short: 0.0
+  fov: 360
+  lambda_short: None
+  range: 4
+  resolution: 1
+  sigma_hit: 0.1
+map_id_set: map_id.txt
+meter2pixel: 25
+mode: 1
+movement_3_sigma: 0.2
+obstacle:
+  number: 0
+  size:
+    max: 0.6
+    min: 0.2
+progress_scale_factor: 0.01
+randomGoal: false
+reachGoalMode: true
+resetRandomPose: 0
+return_Mode: mean
+robotRadius: 0.35
+slamError:
+  angular: 0
+  linear: 0
+startPose:
+  theta: 0.0
+  x: -6.0
+  y: 0.0
+svi_epochs: 30
+t_max: 300

@@ -2,23 +2,35 @@ import pickle
 import lzma
 import os
 import matplotlib.pyplot as plt
+from matplotlib.colors import to_rgba
 import numpy as np
 import math
 import imageio
+
+import matplotlib as mpl
+mpl.rcParams.update(mpl.rcParamsDefault)
 
 # latex formatting strings:
 # https://matplotlib.org/stable/tutorials/text/usetex.html
 # https://matplotlib.org/stable/gallery/text_labels_and_annotations/tex_demo.html
 # remember that special charathers in strings in figures have to have prober escaping: i.e. use "\%" instead of "%"
 plt.rcParams['text.usetex'] = True
+#plt.rc('font', family='times')
+
+#plt.rcParams.update({"text.usetex": True,
+#                    "font.family": "sans-serif",
+#                    "font.sans-serif": ["Helvetica"]})
+
 
 colors = {
-  "yellow": "#FBBC05",
-  "green": "#34A853",
-  "blue": "#4285F4",
-  "red": "#EA4335",
-  "black": "black",
-  "purple": "#410093"
+    "yellow": "#FBBC05",
+    "green": "#34A853",
+    "red": "#EA4335",
+    "blue": "#4285F4",
+    "purple": "#410093",
+    "pink": "#FF33FF",
+    "oliveGreen": "#AFB83B",
+    "black": "black",
 }
 
 def list_files(dir):
@@ -29,7 +41,17 @@ def list_files(dir):
     return r
 
 
-def animationPlot(map_grid_probabilities, mapShape, meter2pixel, reachGoalMode, goal_pos, goal_radius, est_goal_center, robotRadius, position, collisions, z_s_tMinus, z_s_tPlus_samples, z_s_tPlus_):
+def animationPlot(map_grid_probabilities, mapShape, meter2pixel, reachGoalMode, goal_pos, goal_radius, est_goal_center, robotRadius, position, collisions, z_s_tMinus, z_s_tPlus_samples, z_s_tPlus_, decision_mode_idx, decision_modes, lidar_range, pastBrancheState_samples):
+
+    plt.imshow(map_grid_probabilities, cmap='binary', origin="upper", extent=[0, mapShape[1] / meter2pixel, 0, mapShape[0] / meter2pixel], aspect="auto", vmin=0.0, vmax=1.0, zorder=0)
+    plt.gca().autoscale(enable=False, axis='both') # disable autoscaling when plottet elements are larger than the gridmap e.g. lidar range
+
+    for i in range(len(pastBrancheState_samples)):
+        if i == 0:
+            pastBrancheState = plt.Circle((pastBrancheState_samples[i][0].detach(), pastBrancheState_samples[i][1].detach()), robotRadius, alpha=0.2, color=colors["purple"], label="pastBrancheState")
+        else:
+            pastBrancheState = plt.Circle((pastBrancheState_samples[i][0].detach(), pastBrancheState_samples[i][1].detach()), robotRadius, alpha=0.2, color=colors["purple"])
+        plt.gca().add_patch(pastBrancheState)
 
     if reachGoalMode:
         # draw goal zone from goal_pos and goal_radius
@@ -54,7 +76,19 @@ def animationPlot(map_grid_probabilities, mapShape, meter2pixel, reachGoalMode, 
         plt.scatter(z_s_tMinus[0], z_s_tMinus[1], color=colors["green"])
     else:
         z_s_tMinus = np.vstack((z_s_tMinus, position))
-        plt.plot(z_s_tMinus[:, 0], z_s_tMinus[:, 1], color=colors["green"], linestyle='--', label=r"$Z_{\textrm{s}}^{\{0:t\}}$")
+        for tau in range(1,len(z_s_tMinus)-1):
+            color = to_rgba(list(colors.values())[decision_mode_idx[tau]])
+            plt.plot(z_s_tMinus[[tau-1,tau], 0], z_s_tMinus[[tau-1,tau], 1], color=color, linestyle='--')
+        tau = len(z_s_tMinus)-1
+        #plt.plot(z_s_tMinus[[tau-1,tau], 0], z_s_tMinus[[tau-1,tau], 1], color=colors["green"], linestyle='--', label=r"$Z_{\textrm{s}}^{\{0:t\}}$")
+
+        for i in range(len(decision_modes)):
+            color = to_rgba(list(colors.values())[i])
+            if plt.rcParams['text.usetex']:
+                label = r"$Z_{\textrm{s}}^{\{0:t\}}$ " + str(decision_modes[i]).replace("_"," ")
+            else:
+                label = str(decision_modes[i]).replace("_"," ")
+            plt.plot(0.0, 0.0, color=color, linestyle='--', label=label)
 
     # draw planned trajectory samples
     for j in range(len(z_s_tPlus_samples)):
@@ -65,17 +99,26 @@ def animationPlot(map_grid_probabilities, mapShape, meter2pixel, reachGoalMode, 
             else:
                 z_s_tPlus = np.vstack((z_s_tPlus, z_s_tPlus_samples[j][tau2].detach().cpu().numpy()))
         if j == len(z_s_tPlus_samples)-1:
-            plt.plot(z_s_tPlus[:, 0], z_s_tPlus[:, 1], color=colors["green"], label=r"$Z_{\textrm{s}}^{\{t \}^{+} ,\{i_{a}\}}$")
+            if plt.rcParams['text.usetex']:
+                label = r"$Z_{\textrm{s}}^{\{t \}^{+} ,\{i_{a}\}}$"
+            else:
+                label = "None"
+            plt.plot(z_s_tPlus[:, 0], z_s_tPlus[:, 1], color=colors["green"], label=label)
         else:
             plt.plot(z_s_tPlus[:, 0], z_s_tPlus[:, 1], color=colors["green"])
 
     robot = plt.Circle((position[0], position[1]), robotRadius, fill=True, edgecolor=colors["black"], facecolor=colors["green"], zorder=3)
     plt.gca().add_patch(robot)
     #z_s_t = z_s_tPlus_[0].detach().cpu().numpy()
-    plt.plot(position[0], position[1], ".", color=colors["black"], zorder=4, label=r"$E_{p\left(Z_{\textrm{s}}^{\{t\}}\right)}\left[Z_{\textrm{s}}^{\{t\}}\right]$")
+
+    if plt.rcParams['text.usetex']:
+        label = r"$E_{p\left(Z_{\textrm{s}}^{\{t\}}\right)}\left[Z_{\textrm{s}}^{\{t\}}\right]$"
+    else:
+        label = "None"
+    plt.plot(position[0], position[1], ".", color=colors["black"], zorder=4, label=label)
 
     # draw planned trajectory
-    start = 1
+    start = 0
     if isinstance(z_s_tPlus_, list):
         z_s_tPlus = []
         for tau2 in range(start,len(z_s_tPlus_)):
@@ -83,24 +126,30 @@ def animationPlot(map_grid_probabilities, mapShape, meter2pixel, reachGoalMode, 
                 z_s_tPlus = z_s_tPlus_[tau2].detach().cpu().numpy()
             else:
                 z_s_tPlus = np.vstack((z_s_tPlus, z_s_tPlus_[tau2].detach().cpu().numpy()))
-        plt.plot(z_s_tPlus[:, 0], z_s_tPlus[:, 1], "*", color=colors["black"], zorder=4, label=r"$Z_{\textrm{s}}^{\{t \}^{+},*}$")
-        lidar_range = 2  # meter
+        if plt.rcParams['text.usetex']:
+            label=r"$Z_{\textrm{s}}^{\{t \}^{+},*}$"
+        else:
+            label = "None"
+        plt.plot(z_s_tPlus[1:, 0], z_s_tPlus[1:, 1], "*", color=colors["black"], zorder=4, label=label)
+
         for i in range(len(z_s_tPlus)):
             if i == 0:
-                lidar = plt.Circle((z_s_tPlus[i, 0], z_s_tPlus[i, 1]), lidar_range, fill=True, edgecolor=None, facecolor=colors["blue"], alpha=0.2, zorder=2, label=r"Lidar Range at $Z_{\textrm{s}}^{\{t \}^{+},*}$")
+                if plt.rcParams['text.usetex']:
+                    label = r"Lidar Range at $Z_{\textrm{s}}^{\{t \}^{+},*}$"
+                else:
+                    label = "None"
+                lidar = plt.Circle((z_s_tPlus[i, 0], z_s_tPlus[i, 1]), lidar_range, fill=True, edgecolor=None, facecolor=colors["blue"], alpha=0.2, zorder=2, label=label)
             else:
                 lidar = plt.Circle((z_s_tPlus[i, 0], z_s_tPlus[i, 1]), lidar_range, fill=True, edgecolor=None, facecolor=colors["blue"], alpha=0.2, zorder=2)
             plt.gca().add_patch(lidar)
-
-    plt.imshow(map_grid_probabilities, cmap='binary', origin="upper", extent=[0, mapShape[1] / meter2pixel, 0, mapShape[0] / meter2pixel], aspect="auto", vmin=0.0, vmax=1.0, zorder=0)
 
 
 
 
 
 def main():
-    framerate = 10000 # 1 / 0.05
-    scalar = 3  # scaling of plot
+    framerate = 100 #1 / 0.05
+    scalar = 2  # scaling of plot
     n_images_to_same = 8
     SAVE_AS_BAD_EXAMPLE = False
     CREATE_GIF = True
@@ -108,6 +157,8 @@ def main():
     y_limits = None
     # x_limits = [6,16]  # limits on the plottet area
     # y_limits = [3,8.75]  # limits on the plottet area
+    process_folder = None
+    repetitionNumber = None
 
     DATAdir = "play_trajectory_example/Exploration"  # folder for which simulation data is saved
     mapID = "7fb9c9203cb8c4404f4af1781f1c6999"  # ID of the map for which the simulation should be replayed
@@ -130,9 +181,27 @@ def main():
     DATAdir = "date_2022_02_28_time_14_25_47_thread_IDs_0_0"  # folder for which simulation data is saved
     mapID = "empty"
 
+    DATAdir = "date_2022_09_20_time_08_02_43_thread_IDs_0_2"
+    mapID = "C_shape"
+    mapID = "V_shape"
+    #mapID = "double_U_shape"
+    process_folder = "process_0"
+    repetitionNumber = 1
+
+    DATAdir = "date_2022_09_16_time_15_31_05_thread_IDs_0_2"
+    mapID = "0c4526cfad6ac3d12c5ae5dc91327920"
+    process_folder = "process_0"
+    repetitionNumber = 1
+
     save_folder = DATAdir
 
-    save_folder = save_folder + "/" + mapID + "/plots"
+    if process_folder is None:
+        DATAdir = DATAdir + "/" + mapID
+        save_folder = DATAdir + "/plots"
+    else:
+        DATAdir = DATAdir + "/" + mapID + "/" + process_folder
+        save_folder = DATAdir + "/plots"
+    
     if not os.path.exists(save_folder):
         os.mkdir(save_folder)
     else:
@@ -150,15 +219,25 @@ def main():
 
 
     DATAfiles = list_files(DATAdir)
+    pickledFiles = []
 
     pickleFile = None
     for i in range(len(DATAfiles)):
         if mapID in DATAfiles[i] and DATAfiles[i].endswith(".xz"):
             pickleFile = DATAfiles[i]
+            pickledFiles.append(pickleFile)
         # if DATAfiles[i].endswith(".xz") and DATAfiles[i].replace(".xz", ".p") not in DATAfiles:
         #    compressed_pickleFiles.append(DATAfiles[i])
 
-    pickleFile = DATAdir + "/" + mapID + "/2.xz"
+    if repetitionNumber is not None:
+        for pickleFile_ in pickledFiles:
+            if pickleFile_.endswith("/"+str(repetitionNumber)+".xz"):
+                pickleFile = pickleFile_
+                break
+    else:
+        pickleFile = pickledFiles[0]
+
+    print(pickleFile)
 
     if pickleFile is None:
         print("File with trajectory not found!")
@@ -185,7 +264,7 @@ def main():
 
         z_s_tMinus = None
 
-        collisions = data["collisions"]
+        #collisions = data["collisions"]
 
         if "goal_pos" in data:
             goal_pos = data["goal_pos"]
@@ -200,6 +279,10 @@ def main():
         # robotRadius = 0.2
         robotRadius = data["robotRadius"]
 
+        if "lidar_range" in data:
+            lidar_range = data["lidar_range"]
+        else:
+            lidar_range = 4
 
         n_plots = len(tau_to_save)
         rows = 2
@@ -208,17 +291,49 @@ def main():
         plots_pr_row = math.ceil(n_plots/rows)
         fig, axs = plt.subplots(rows,plots_pr_row, figsize=[6.4, 6.4/2])
 
+        #decision_modes = data["reactiveAttentionMechanism"]
+        for tau in range(len(data["reactiveAttentionMechanism"])):
+            if "_constraintAvoidance" in data["reactiveAttentionMechanism"][tau]:
+                data["reactiveAttentionMechanism"][tau] = "constraintAvoidance"
+            #data["reactiveAttentionMechanism"][tau] = data["reactiveAttentionMechanism"][tau].replace("_constraintAvoidance","")
+        if "reactiveAttentionMechanism" in data:
+            decision_modes = list(set(data["reactiveAttentionMechanism"]))
+            print("decision_modes: " + str(decision_modes))
 
 
+        distance_travelled_exploring = 0
+        timesteps_used_exploring = 0
+
+        decision_mode_idx = []
         for tau in range(timesteps):
             map_grid_probabilities = data["explored_map"]["map"][tau]
             position = data["trajectory"][tau]
             z_s_tPlus_samples = data["explored_map"]["planned_states_samples"][tau]
             z_s_tPlus_ = data["explored_map"]["planned_state_choosen"][tau]
 
+            if "pastBrancheState_samples" in data["explored_map"]:
+                pastBrancheState_samples = data["explored_map"]["pastBrancheState_samples"][tau]
+            else:
+                pastBrancheState_samples = []
+
+            if "reactiveAttentionMechanism" in data:
+                decision_mode = data["reactiveAttentionMechanism"][tau]
+                decision_mode_idx.append(decision_modes.index(decision_mode))
+                decision_mode = str(decision_mode).replace("_", " ")
+                decision_mode_color = to_rgba(list(colors.values())[decision_mode_idx[tau]])
+
+            if "Explore" in decision_mode:
+                #print(decision_mode)
+                p1 = data["trajectory"][tau-1]
+                p2 = data["trajectory"][tau]
+                dist = np.sqrt((p2[0]-p1[0])*(p2[0]-p1[0]) + (p2[1]-p1[1])*(p2[1]-p1[1]))
+                distance_travelled_exploring = distance_travelled_exploring + dist
+                timesteps_used_exploring = timesteps_used_exploring + 1
+
+
             plt.sca(axs_animation)
             axs_animation.clear()
-            plt.title("Timestep t: " + str(tau) + "\n Map ID: " + mapID)
+            plt.title("Timestep t: " + str(tau) + "\n Decision Mode: " + decision_mode + "      Map ID: " + mapID.replace("_", " "))
 
             # draw past trajectory
             if z_s_tMinus is None:
@@ -226,15 +341,24 @@ def main():
             else:
                 z_s_tMinus = np.vstack((z_s_tMinus, position))
 
+
+            collisions = []
+            collisions_ = data["explored_map_collision"]
+            for tau_ in collisions_["t"]:
+                if tau >= tau_:
+                    idx = collisions_["t"].index(tau_)
+                    collisions.append(collisions_["position"][idx])
+
+
             if "goal_pos" in data:
                 est_goal_center = data["explored_map"]["estimated_goal_mean"][tau]
 
-            animationPlot(map_grid_probabilities, mapShape, meter2pixel, reachGoalMode, goal_pos, goal_radius, est_goal_center, robotRadius, position, collisions, z_s_tMinus, z_s_tPlus_samples, z_s_tPlus_)
+            animationPlot(map_grid_probabilities, mapShape, meter2pixel, reachGoalMode, goal_pos, goal_radius, est_goal_center, robotRadius, position, collisions, z_s_tMinus, z_s_tPlus_samples, z_s_tPlus_, decision_mode_idx, decision_modes, lidar_range, pastBrancheState_samples)
             handles, labels = axs_animation.get_legend_handles_labels()
             if tau == 0:
                 box = axs_animation.get_position()
                 axs_animation.set_position([box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9])
-            axs_animation.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=False, ncol=len(labels))
+            axs_animation.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=False, ncol=int(np.ceil(len(labels)/2)))
             if x_limits != None and y_limits != None:
                 axs_animation.set_xlim(x_limits)
                 axs_animation.set_ylim(y_limits)
@@ -244,26 +368,26 @@ def main():
                 gif_file_path = gif_folder + "/" + str(tau) + ".png"
                 plt.savefig(gif_file_path, format='png', bbox_inches = "tight")
 
-            if tau >= tau_to_save[n]:
-                print("saving fig number: " + str(n), flush=True)
-                plt.savefig(save_folder + "/good_map_example_" + str(n) + '.pdf', format='pdf')
+            # if tau >= tau_to_save[n]:
+            #     print("saving fig number: " + str(n), flush=True)
+            #     plt.savefig(save_folder + "/good_map_example_" + str(n) + '.pdf', format='pdf')
 
-                plt.sca(axs[row,plot_idx_in_row])
-                animationPlot(map_grid_probabilities, mapShape, meter2pixel, reachGoalMode, goal_pos, goal_radius, est_goal_center, robotRadius, position, collisions, z_s_tMinus, z_s_tPlus_samples, z_s_tPlus_)
-                axs[row,plot_idx_in_row].set_title("{percentage:.2f}\%, t = {t}".format(percentage=percentage_explored[tau]*100,t=tau))
-                if tau == tau_to_save[-1]:
-                    handles, labels = axs[row,plot_idx_in_row].get_legend_handles_labels()
-                    #fig.legend(handles, labels, loc='lower center', ncol=len(labels))
-                    #plt.subplots_adjust(bottom=0.2)
-                    axs[row,plot_idx_in_row].legend(loc="lower right", ncol=len(labels))
+            #     plt.sca(axs[row,plot_idx_in_row])
+            #     animationPlot(map_grid_probabilities, mapShape, meter2pixel, reachGoalMode, goal_pos, goal_radius, est_goal_center, robotRadius, position, collisions, z_s_tMinus, z_s_tPlus_samples, z_s_tPlus_, decision_mode_idx, decision_modes, lidar_range, pastBrancheState_samples)
+            #     axs[row,plot_idx_in_row].set_title("{percentage:.2f}\%, t = {t}".format(percentage=percentage_explored[tau]*100,t=tau))
+            #     if tau == tau_to_save[-1]:
+            #         handles, labels = axs[row,plot_idx_in_row].get_legend_handles_labels()
+            #         #fig.legend(handles, labels, loc='lower center', ncol=len(labels))
+            #         #plt.subplots_adjust(bottom=0.2)
+            #         axs[row,plot_idx_in_row].legend(loc="lower right", ncol=len(labels))
 
-                n = n + 1
+            #     n = n + 1
 
-                if plot_idx_in_row == plots_pr_row-1:
-                    row = row + 1
-                    plot_idx_in_row = 0
-                else:
-                    plot_idx_in_row = plot_idx_in_row + 1
+            #     if plot_idx_in_row == plots_pr_row-1:
+            #         row = row + 1
+            #         plot_idx_in_row = 0
+            #     else:
+            #         plot_idx_in_row = plot_idx_in_row + 1
 
             fig_animation.canvas.draw()
             fig_animation.canvas.flush_events()
@@ -277,8 +401,11 @@ def main():
             for f in os.listdir(gif_folder):
                 os.remove(os.path.join(gif_folder, f))
             os.rmdir(gif_folder)
+            print("Gif created!")
 
-
+        print("Total distance_travelled_exploring: " + str(distance_travelled_exploring))
+        print("timesteps_used_exploring: " + str(timesteps_used_exploring))
+        print("Dist pr. timestep exploring: " + str(distance_travelled_exploring/timesteps_used_exploring))
 
         plt.show()
 

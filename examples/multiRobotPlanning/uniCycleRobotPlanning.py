@@ -2,12 +2,12 @@ import torch
 from torch.distributions import constraints
 import pyro
 import pyro.distributions as dist
-from pyro.contrib.autoname import scope
 from pyro import poutine
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 
+from damgaard2022MR import LTMImplementation, PlanningImplementation, AppraisalsImplementation, ReflectiveAttentionMechanismImplementation
 
 from pathlib import Path
 from sys import path
@@ -16,9 +16,9 @@ from os.path import dirname as dir
 path.append(dir(Path(path[0].replace("multiRobotPlanning", ""))))
 __package__ = "probmind"
 
-from cognition.planning import Planning
+from cognition.probMindAgent import ProbMindAgent
 
-class UniCycleRobotPlanning(Planning):
+class UniCycleRobotPlanning(ProbMindAgent):
 
     def __init__(self, robot_ID, configs):
         K = configs["K"]  # K: number of options/trajectories to consider
@@ -39,18 +39,18 @@ class UniCycleRobotPlanning(Planning):
         #optim_args = {"lr":configs["lr"]}
         #optimizer = pyro.optim.Adam(optim_args)
 
-        def per_param_lr(module_name, param_name):
-            if "a_alpha_rot_" in param_name:
-                return {"lr": configs["lr_a_alpha_rot"]}
-            elif "a_beta_rot_" in param_name:
-                return {"lr": configs["lr_a_beta_rot"]}
-            elif "a_alpha_trans_" in param_name:
-                return {"lr": configs["lr_a_alpha_trans"]}
-            elif "a_beta_trans_" in param_name:
-                return {"lr": configs["lr_a_beta_trans"]}
-            else:
-                return {"lr": configs["lr"]}
-        optimizer = pyro.optim.Adam(per_param_lr)
+        # def per_param_lr(module_name, param_name):
+        #     if "a_alpha_rot_" in param_name:
+        #         return {"lr": configs["lr_a_alpha_rot"]}
+        #     elif "a_beta_rot_" in param_name:
+        #         return {"lr": configs["lr_a_beta_rot"]}
+        #     elif "a_alpha_trans_" in param_name:
+        #         return {"lr": configs["lr_a_alpha_trans"]}
+        #     elif "a_beta_trans_" in param_name:
+        #         return {"lr": configs["lr_a_beta_trans"]}
+        #     else:
+        #         return {"lr": configs["lr"]}
+        # optimizer = pyro.optim.Adam(per_param_lr)
 
         self.model_error = configs["model_error"]
         self.a_support = configs["a_support"]
@@ -63,19 +63,39 @@ class UniCycleRobotPlanning(Planning):
         self.t_avg_planning = self.t_delta/4  # estimate of how long time is used to plan a new action
         self.t_count = 1
 
+        appraisalsImplementationParams = {}
+        appraisalsImplementation = AppraisalsImplementation(appraisalsImplementationParams)
+
+        PlanningParams = {}
+        PlanningParams["ID"] = robot_ID
+        PlanningParams["alpha_init"] = configs["alpha_init"]
+        PlanningParams["beta_init"] = configs["beta_init"]
+        PlanningParams["svi_epochs"] = configs["svi_epochs"]
+        PlanningParams["a_support"] = configs["a_support"]
+        PlanningParams["model_error"] = configs["model_error"]
+        PlanningParams["K"] = configs["K"]
+        PlanningParams["lr_a_alpha_rot"] = configs["lr_a_alpha_rot"]
+        PlanningParams["lr_a_beta_rot"] = configs["lr_a_beta_rot"]
+        PlanningParams["lr_a_alpha_trans"] = configs["lr_a_alpha_trans"]
+        PlanningParams["lr_a_beta_trans"] = configs["lr_a_beta_trans"]
+        PlanningParams["lr"] = configs["lr"]
+        PlanningParams["desirability_scale_factor"] = configs["desirability_scale_factor"]
+        PlanningParams["radius"] = configs["r_radius"]
+        self.planningImplementation = PlanningImplementation(PlanningParams, appraisalsImplementation)
+
+        reflectiveAttentionMechanismImplementationParams = {}
+        reflectiveAttentionMechanismImplementationParams["radius"] = configs["r_radius"]
+        reflectiveAttentionMechanismImplementationParams["ID"] = robot_ID
+        reflectiveAttentionMechanismImplementationParams["constraint_scale_factor"] = configs["constraint_scale_factor"]
+        reflectiveAttentionMechanismImplementationParams["desirability_scale_factor"] = configs["desirability_scale_factor"]
+        reflectiveAttentionMechanismImplementationParams["N_posterior_samples"] = configs["N_posterior_samples"]
+        reflectiveAttentionMechanismImplementation = ReflectiveAttentionMechanismImplementation(appraisalsImplementation, self.planningImplementation, reflectiveAttentionMechanismImplementationParams)
+
+
         self.reset()
 
-        super().__init__(K,
-                         M,
-                         N,
-                         G,
-                         L,
-                         svi_epochs,
-                         optimizer,
-                         desirability_scale_factor=desirability_scale_factor,
-                         progress_scale_factor=0.0,  # not used!
-                         info_gain_scale_factor=0.0,  # not used!
-                         consider_impasse=False)
+        super().__init__(reflectiveAttentionMechanismImplementation)
+
 
     def reset(self):
         self.T = 0
@@ -108,8 +128,6 @@ class UniCycleRobotPlanning(Planning):
             return z_s
 
 
-        self.msgs_received = msgs_received
-        self.z_goal = torch.tensor(goal_position, dtype=torch.float)
 
         self.T = int(np.floor(current_time / self.t_delta))
         self.t_left_to_next_timestep = (self.T + 1) * self.t_delta - current_time
@@ -126,17 +144,20 @@ class UniCycleRobotPlanning(Planning):
             self.t_left_from_predicted_pose = self.t_left_to_next_timestep - self.t_avg_planning 
             self.t_old = current_time
 
-            try:
-                z_a_tPlus_samples, z_s_tPlus_samples, k_samples = super().makePlan(self.T, self.T_delta, p_z_s_t, N_posterior_samples=self.N_posterior_samples)
-            except:
-                with open(self.configs["DataDir"] + "/errors_" + str(self.ID) + ".txt", "w") as file:
-                    file.write("Error while trying to run SVI! any negative time? \n")
-                    file.write("Current_time: " + str(current_time) + "\n")
-                    file.write("T: " + str(self.T) + "\n")
-                    file.write("t_left_to_next_timestep: " + str(self.t_left_to_next_timestep) + "\n")
-                    file.write("t_avg_planning: " + str(self.t_avg_planning) + "Hello \n")
-                    file.write("t_left_from_predicted_pose: " + str(self.t_left_from_predicted_pose) + "\n")
-                    file.write("t_delta: " + str(self.t_delta) + "\n")
+
+            dynamicParams = {}
+            dynamicParams["msgs_received"] = msgs_received
+            dynamicParams["z_goal"] = torch.tensor(goal_position, dtype=torch.float)
+            dynamicParams["z_a_t_old"] = self.z_a_t_old
+            dynamicParams["T"] = self.T
+            dynamicParams["t_avg_planning"] = self.t_avg_planning
+            dynamicParams["t_left_from_predicted_pose"] = self.t_left_from_predicted_pose
+            dynamicParams["t_delta"] = self.t_delta
+
+            ltm = LTMImplementation()
+            z_a_tPlus_samples, z_s_tPlus_samples, k_samples, param_store = super().makePlan(self.T, self.T_delta, p_z_s_t, ltm, dynamicParams = dynamicParams)
+            self.param_store = param_store
+
 
             if not (return_mode == "mean" or return_mode == "random"):
                 return_mode == "random"
@@ -162,7 +183,7 @@ class UniCycleRobotPlanning(Planning):
                         z_s_tPlus_samples[j][tau] = p_z_s_t()  # we should be standing still
 
             # Transform actions
-            act = self.action_transforme(z_a_t).detach().cpu().numpy()
+            act = self.planningImplementation.action_transforme(z_a_t).detach().cpu().numpy()
 
             msg = self.pack_msg(pose_mean, pose_L, p_z_s_t, z_a_t, k, Break)
 
@@ -180,7 +201,7 @@ class UniCycleRobotPlanning(Planning):
             self.N_msgs_send = self.N_msgs_send + 1
 
             if self.T > self.T_old:
-                print("Robot with ID " + str(self.ID) + " sends " + str(self.N_msgs_send) + " msgs pr. time step. Time pr. msgs: " + str(self.t_avg_planning) + " s. Msg received: " + str(len(self.msgs_received)))
+                print("Robot with ID " + str(self.ID) + " sends " + str(self.N_msgs_send) + " msgs pr. time step. Time pr. msgs: " + str(self.t_avg_planning) + " s. Msg received: " + str(len(msgs_received)))
                 self.N_msgs_send = 0
             self.T_old = self.T
 
@@ -200,10 +221,16 @@ class UniCycleRobotPlanning(Planning):
                 a_alpha = torch.tensor([100000,100000], dtype=torch.float)
                 a_beta = torch.tensor([100000,100000], dtype=torch.float)
             else:
-                a_alpha_trans = pyro.param("{}/a_alpha_trans_{}_{}".format(tau, self.ID, k)).detach()
-                a_alpha_rot = pyro.param("{}/a_alpha_rot_{}_{}".format(tau, self.ID, k)).detach()
-                a_beta_trans = pyro.param("{}/a_beta_trans_{}_{}".format(tau, self.ID, k)).detach()
-                a_beta_rot = pyro.param("{}/a_beta_rot_{}_{}".format(tau, self.ID, k)).detach()
+                # a_alpha_trans = pyro.param("{}/a_alpha_trans_{}_{}".format(tau, self.ID, k)).detach()
+                # a_alpha_rot = pyro.param("{}/a_alpha_rot_{}_{}".format(tau, self.ID, k)).detach()
+                # a_beta_trans = pyro.param("{}/a_beta_trans_{}_{}".format(tau, self.ID, k)).detach()
+                # a_beta_rot = pyro.param("{}/a_beta_rot_{}_{}".format(tau, self.ID, k)).detach()
+
+                a_alpha_trans = self.param_store["{}/a_alpha_trans_{}_{}".format(tau, self.ID, k)].detach()
+                a_alpha_rot = self.param_store["{}/a_alpha_rot_{}_{}".format(tau, self.ID, k)].detach()
+                a_beta_trans = self.param_store["{}/a_beta_trans_{}_{}".format(tau, self.ID, k)].detach()
+                a_beta_rot = self.param_store["{}/a_beta_rot_{}_{}".format(tau, self.ID, k)].detach()
+
                 a_alpha = torch.stack((a_alpha_trans, a_alpha_rot), 0)
                 a_beta = torch.stack((a_beta_trans, a_beta_rot), 0)
 
@@ -262,180 +289,15 @@ class UniCycleRobotPlanning(Planning):
 
         return z_a_tauPlus_mean, z_s_tauPlus_mean
 
-    # ################### overwrite parent class methods ####################
-    def _Planning__WM_planning_logic(self, tau, T, P_impasse, z_s_tau, p_z_s_tau_trace, p_z_s_Minus, P_z_C_tau, P_z_C_accum, P_z_d = None):
-        # The planning logic in the paper related to this simulation is not quit the same as for the planning idiom. Therefore we overwrite it.
-        # Here we observe the optimality variable as well as the constraint variable at each time step
-        # However we could easily have used to logic of the planning idiom instead! 
-
-        with scope(prefix=str(tau)):
-            if self.msgs_received != None:
-                for ID in range(len(self.msgs_received)):
-                    min_dist = self.radius + self.msgs_received[ID][8] # + 0.1
-                    pyro.sample("c_{}_{}_{}".format(self.ID,ID,tau), dist.Bernoulli(self.constraint(z_s_tau["own_pose"], z_s_tau[str(ID)], min_dist)), obs=torch.tensor([0.],dtype=torch.float)) # constraint!
-
-            P_z_o = self.cost(tau, z_s_tau)
-            pyro.sample("x_o_{}".format(self.ID), dist.Bernoulli(P_z_o), obs=torch.tensor([1.], dtype=torch.float))
-
-        return None
-
-    #@torch.jit.script
-    def constraint(self, own_pose, others_pose, min_dist):
-        dist = torch.dist(own_pose[torch.tensor([0, 1])], others_pose[torch.tensor([0, 1])], p=2)
-        if dist<= min_dist:
-            return torch.tensor([1.],dtype=torch.float)
-        else:
-            dist = dist - min_dist
-            return torch.exp(-dist*self.constraint_scale_factor) # the higher constant the closer we allow the robots
-
-    def cost(self, tau, z_s_tau):
-        pose = z_s_tau["own_pose"]
-        C = torch.dist(pose[[0,1]], self.z_goal.index_select(0, torch.tensor([0, 1])),p=2)
-        # if C > 2.0:  # this allows us to tune the "desirability_scale_factor" and learning rates for goals a specific distance away from the robot
-        #     goal_vector = self.z_goal.index_select(0, torch.tensor([0, 1])).detach() - pose[[0,1]].detach()
-        #     goal_vector_normalized = torch.nn.functional.normalize(goal_vector, dim=0).detach()
-        #     goal_tmp = pose[[0,1]].detach() + 2.0*goal_vector_normalized.detach()
-        #     C = torch.dist(pose[[0,1]], goal_tmp,p=2)
-
-        P_z_o = torch.exp(-self.params["desirability_scale_factor"] * C)
-        return P_z_o
-
-    def _Planning__P_z_c_tau(self, tau, z_s_tau, z_s_tauMinus1):  
-        # the __P_z_c_tau function in the planning module needs to be updated to work with dict states!
-        # however this will require an update of the other examples!
-        return torch.tensor([0.0])
-
-    # ################### Abstract methods of the class Planning ####################
-    def q_z_MB_tau(self, tau, z_s_tauMinus1, k):
-        z_a = {}
-
-        if tau == self.T:  # this is fixed while we are planning
-            z_a["own_action"] = self.z_a_t_old
-        else:
-            alpha_init = torch.tensor(self.alpha_init, dtype=torch.float) # small preference for going forward initially 
-            beta_init = torch.tensor(self.beta_init, dtype=torch.float)
-            # parameters are not automatically scoped!
-            a_alpha_trans = pyro.param(str(tau)+"/"+"a_alpha_trans_{}_{}".format(self.ID, k), alpha_init[0], constraint=constraints.positive)  # alpha,beta = 1 gives uniform!
-            a_alpha_rot = pyro.param(str(tau)+"/"+"a_alpha_rot_{}_{}".format(self.ID, k), alpha_init[1], constraint=constraints.positive)  # alpha,beta = 1 gives uniform!
-            a_beta_trans = pyro.param(str(tau)+"/"+"a_beta_trans_{}_{}".format(self.ID, k), beta_init[0], constraint=constraints.positive)  # alpha,beta = 1 gives uniform!
-            a_beta_rot = pyro.param(str(tau)+"/"+"a_beta_rot_{}_{}".format(self.ID, k), beta_init[1], constraint=constraints.positive)  # alpha,beta = 1 gives uniform!
-
-            # a_beta_trans = torch.exp(a_beta_trans/1000/5)  # can potentially make the actions more aggressive!
-            # a_alpha_trans = a_alpha_trans*a_alpha_trans*a_alpha_trans  # can potentially make the actions more aggressive!
-
-            a_alpha = torch.stack((a_alpha_trans, a_alpha_rot), 0)
-            a_beta = torch.stack((a_beta_trans, a_beta_rot), 0)
-
-            _q_z_a_tau = dist.Beta(a_alpha, a_beta).to_event(1)
-            z_a["own_action"] = pyro.sample("z_a_{}".format(self.ID), _q_z_a_tau)
-
-        return z_a
-
-    def p_z_MB_tau(self, tau, z_s_tau):
-        z_a = {}
-        if tau == self.T:  # this is fixed while we are planning
-            z_a["own_action"] = self.z_a_t_old
-        else:
-            # values should not be changed - use the params in "action_transforme" instead!
-            a_min = torch.tensor([0., 0.], dtype=torch.float)
-            a_max = torch.tensor([1., 1.], dtype=torch.float)
-            _p_z_a_tau = dist.Uniform(a_min, a_max).to_event(1)
-            z_a["own_action"] = pyro.sample("z_a_{}".format(self.ID), _p_z_a_tau)
-
-        with poutine.block():  # we only need the samples!
-            with torch.no_grad():
-                if self.msgs_received != None:
-                    for ID in range(len(self.msgs_received)):
-                        if tau == self.T:  # this is fixed while we are planning
-                            z_a[str(ID)] = self.msgs_received[ID][7]
-                        elif tau == self.T + 1:  # this is fixed while we are planning
-                            z_a[str(ID)] = self.msgs_received[ID][2]
-                        else:
-                            if tau-(self.T+2) <= len(self.msgs_received[ID][3]):
-                                a_alpha_ = self.msgs_received[ID][3][tau-(self.T+2)]
-                                a_beta_ = self.msgs_received[ID][4][tau-(self.T+2)]
-                                z_a[str(ID)] = pyro.sample("z_a_{}_{}".format(self.ID, ID), dist.Beta(a_alpha_, a_beta_).to_event(1)).detach()
-        return z_a
-
-    def p_z_s_tau(self, tau, z_s_tauMinus1, z_a_tauMinus1):
-        z_s = {}
-        if tau == self.T:  # only propagate time until the end of planning
-            z_s["own_pose"] = pyro.sample("z_s_{}".format(self.ID), self.F(z_s_tauMinus1["own_pose"], z_a_tauMinus1["own_action"], self.t_avg_planning))
-        if tau == self.T + 1:  # propagate time left until next timestep!
-            z_s["own_pose"] = pyro.sample("z_s_{}".format(self.ID), self.F(z_s_tauMinus1["own_pose"], z_a_tauMinus1["own_action"], self.t_left_from_predicted_pose))
-        else:  # propagate time a whole timestep
-            z_s["own_pose"] = pyro.sample("z_s_{}".format(self.ID), self.F(z_s_tauMinus1["own_pose"], z_a_tauMinus1["own_action"], self.t_delta))
-
-
-        with poutine.block():  # we only need the samples!
-            with torch.no_grad():
-                if self.msgs_received != None:
-                    for ID in range(len(self.msgs_received)):
-                        if str(ID) in z_a_tauMinus1:  # if the function is called from the guide "z_a_tauMinus1" does not exist!
-                            if tau == self.T:  # only propagate time until the end of planning
-                                t_avg_planning = self.msgs_received[ID][5]
-                                z_s[str(ID)] = pyro.sample("z_s_{}_{}".format(self.ID,ID), self.F(z_s_tauMinus1[str(ID)], z_a_tauMinus1[str(ID)], self.t_avg_planning)).detach()
-                            elif tau == self.T + 1:  # propagate time left until next timestep!
-                                t_left_from_predicted_pose = self.msgs_received[ID][6]
-                                z_s[str(ID)] = pyro.sample("z_s_{}_{}".format(self.ID,ID), self.F(z_s_tauMinus1[str(ID)], z_a_tauMinus1[str(ID)], self.t_left_from_predicted_pose)).detach()
-                            else:  # propagate time a whole timestep
-                                if tau-(self.T+2) <= len(self.msgs_received[ID][3]):
-                                    z_s[str(ID)] = pyro.sample("z_s_{}_{}".format(self.ID,ID), self.F(z_s_tauMinus1[str(ID)], z_a_tauMinus1[str(ID)], self.t_delta)).detach()
-
-        return z_s
-
-    def d_c_tau(self, tau, z_s_tau, z_LTM, z_PB_posterior):
-        return None
-
-    def p_z_LTM(self):
-        return None
-
-    def p_z_PB(self, tau, z_s_tau):
-        return None
-
-    def p_z_PB_posterior(self, tau, z_s_tau, z_LTM):
-        return None
-
-    def generate_PB_LTM_information_gain_subsampling_context(self, z_s_tau):
-        return []
-
-    def generate_PB_LTM_constraint_subsampling_context(self, z_s_tau):
-        return []
-
-    def I_c_tilde(self, tau, d):
-        return None
-
-    # ################### other methods ####################
-    # @torch.jit.script
-    def action_transforme(self, z_a_t):
-        # scaling parameters for the action
-        a_support = torch.tensor(self.a_support, dtype=torch.float) # [m/s,rad/s] turtlebot3 burger
-        a_offset = -a_support/2
-        return a_support*z_a_t + a_offset
-
-    # @torch.jit.script
-    def f(self, z_s_tauMinus1, z_a_t, t_delta):
-        # Simple Kinematic Motion model for uni-cycle robot with linear/angular velocity (Twist) input
-        # The model is dicretized by the Euler method
-        a = self.action_transforme(z_a_t)
-
-        mean = torch.empty(3)
-
-        mean[0] = z_s_tauMinus1[0] + torch.cos(z_s_tauMinus1[2])*a[0]*t_delta[0]
-        mean[1] = z_s_tauMinus1[1] + torch.sin(z_s_tauMinus1[2])*a[0]*t_delta[0]
-        mean[2] = z_s_tauMinus1[2] + a[1]*t_delta
-
-        return mean
-
-    def F(self, z_s_tauMinus1, z_a_tauMinus1, t_delta):
-        mean = self.f(z_s_tauMinus1, z_a_tauMinus1, t_delta)
-
-        M = t_delta*torch.tensor(self.model_error,dtype=torch.float)
-        return dist.Uniform(mean-M, mean+M).to_event(1)
-
-
     def p_z_s_t_single_robot(self, pose_mean, pose_L):
         meas_mean = torch.tensor(pose_mean, dtype=torch.float).detach()
         meas_L_ = torch.tensor(pose_L, dtype=torch.float).detach()
         _p_z_s_t = dist.MultivariateNormal(meas_mean, scale_tril=meas_L_)
         return _p_z_s_t
+
+
+    #def _Planning__P_z_c_tau(self, tau, z_s_tau, z_s_tauMinus1):  
+    #    # the __P_z_c_tau function in the planning module needs to be updated to work with dict states!
+    #    # however this will require an update of the other examples!
+    #    return torch.tensor([0.0])
+

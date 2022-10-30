@@ -13,23 +13,23 @@ import sim
 configs_folder = "configs/damgaard2022SVIFDPR/Antipodal_Circle_Swapping/"
 
 N_Robots = [2, 4, 8, 16, 32]  # 32 causes collisions from the beginning with random initialization
-real_time_factor = [0.9, 0.8, 0.5, 0.15, 0.05]  # for simulation on a PC with an intel i5-12600k CPU
+real_time_factor = [0.9, 0.8, 0.5, 0.15, 0.05]  # for simulation on a PC with an intel i5-12600k@5.1GHz CPU
 max_expected_sim_times = [45, 50, 70, 80, 100]
 
 #N_Robots = [32, 16, 8, 4, 2]  # 32 causes collisions from the beginning with random initialization
-#real_time_factor = [0.05, 0.15, 0.5, 0.8, 0.9]  # for simulation on a PC with an intel i5-12600k CPU
+#real_time_factor = [0.05, 0.15, 0.5, 0.8, 0.9]  # for simulation on a PC with an intel i5-12600k@5.1GHz CPU
 #max_expected_sim_times = [90, 70, 65, 60, 45]
 
 #N_Robots = [2]  
-#real_time_factor = [0.9]
+#real_time_factor = [0.7]
 #N_Robots = [4]  
-#real_time_factor = [0.8]
+#real_time_factor = [0.5]
 #N_Robots = [8]  
 #real_time_factor = [0.5]
 #N_Robots = [16]  
 #real_time_factor = [0.15]
 #N_Robots = [32]  # 32 causes collisions from the beginning with random initialization
-#real_time_factor = [0.05]  # for simulation on a PC with an intel i5-12600k CPU
+#real_time_factor = [0.05]  # for simulation on a PC with an intel i5-12600k@5.1GHz CPU
 #max_expected_sim_times = [100]
 
 def main():

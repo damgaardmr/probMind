@@ -1,0 +1,43 @@
+K: 1
+N_Robots: 4
+N_posterior_samples: 25
+N_simulations: 10
+T_delta: 4
+a_support:
+- 0.44
+- 5.68
+alpha_init:
+- 1000.0
+- 1000.0
+angle_error: 2.5
+beta_init:
+- 1000.0
+- 1000.0
+constraint_scale_factor: 5.0
+desirability_scale_factor: 2.0
+estimation_scale_factor: 1
+framerate: 24
+goal_radius: 0.1
+lr: 0.05
+lr_a_alpha_rot: 0.2
+lr_a_alpha_trans: 0.001
+lr_a_beta_rot: 0.2
+lr_a_beta_trans: 0.3
+model_error:
+- 0.05
+- 0.05
+- 0.1
+plan_dist: 4
+pos_error: 0.12
+r_diviation_percentage: 0.0
+r_radius: 0.2
+real_time_factor: 0.5
+receive_distance: 2.0
+render_receive_distance: false
+save_pngs_for_gif: true
+scenario: 2
+simulated_time_pr_sim: 200
+stop_after_first_goal_is_reached: true
+svi_epochs: 10
+t_buffer: 0.03
+t_delta: 1.0

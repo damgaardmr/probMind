@@ -11,6 +11,10 @@ from lidarmodel import p_z_Lidar_prior, p_z_Lidar_posterior, p_z_Map_prior, lida
 from barrierfunctions import logistic
 
 
+from damgaard2022AKS import LTMImplementation, PlanningImplementation, AppraisalsImplementation
+from damgaard2022AKS import ReflectiveAttentionMechanismImplementation as ReflectiveAttentionMechanismImplementationAKS
+from damgaard2022RGS import ReflectiveAttentionMechanismImplementation as ReflectiveAttentionMechanismImplementationRGS
+
 from pathlib import Path
 from sys import path
 import os
@@ -18,75 +22,95 @@ from os.path import dirname as dir
 path.append(dir(Path(path[0].replace("robotPlanning", ""))))
 __package__ = "probmind"
 
-from cognition.planning import Planning
+from cognition.probMindAgent import ProbMindAgent
 
-class RobotPlanning(Planning):
 
+class RobotPlanning(ProbMindAgent):
     def __init__(self, configs):
-        K = configs["K"]  # K: number of options/trajectories to consider
-        M = configs["M"]  # M: number of samples from each independent perception in calculation of the information gain
-        N = configs["N"]  # N: number of LTM samples used in calculation of the information gain
-        G = configs["G"]  # G: number of samples from each independent constraint
-        L = configs["L"]  # L: number of past states to consider in progress
-
-        self.N_posterior_samples = configs["N_posterior_samples"]
-
-        desirability_scale_factor = configs["desirability_scale_factor"]
-        progress_scale_factor = configs["progress_scale_factor"]
-        info_gain_scale_factor = configs["info_gain_scale_factor"]
-        svi_epochs = configs["svi_epochs"]
-
-        # https://pyro.ai/examples/svi_part_iv.html
-        initial_lr = configs["initial_lr"]
-        gamma = configs["gamma"]  # final learning rate will be gamma * initial_lr
-        lrd = gamma ** (1 / svi_epochs)
-        optim_args = {'lr': initial_lr, 'lrd': lrd}
-        optimizer = pyro.optim.ClippedAdam(optim_args)
-
-        # Model specific params:
-        standard_diviation = torch.tensor(configs["movement_3_sigma"] / 3)  # 99.7% of samples within a circle of 25 cm
-        variance = standard_diviation * standard_diviation
-        self.params["cov_s"] = variance * torch.eye(2)
-        self.params["a_support"] = torch.tensor(configs["a_support"], dtype=torch.float)  # 1 m in each direction
-
         # lidar params
         lidarParams = {}
+        lidarParams = configs["lidar"]
         lidarParams["meter2pixel"] = configs["meter2pixel"]
         lidarParams["z_max"] = torch.tensor([configs["lidar"]["range"]], dtype=torch.float)  # range in meters
         lidarParams["sigma_hit"] = torch.tensor(configs["lidar"]["sigma_hit"], dtype=torch.float)
-        lidarParams["lambda_short"] = None  # not implemented
         lidarParams["N_lidar_beams"] = int(configs["lidar"]["fov"] / configs["lidar"]["resolution"])  # FOV is not used correctly. 360 degrees should always be used
-        lidarParams["P_hit"] = configs["lidar"]["P_hit"]
-        lidarParams["P_rand"] = configs["lidar"]["P_rand"]
-        lidarParams["P_max"] = configs["lidar"]["P_max"]
-        lidarParams["P_short"] = configs["lidar"]["P_short"]  # not implemented yet! => should always be zero
         self.params["lidarParams"] = lidarParams
 
         # constraint params
-        self.params["P_z_C_scale"] = torch.tensor(configs["P_z_C_scale"], dtype=torch.float)
-        self.params["d_min"] = torch.tensor([configs["robotRadius"] + configs["distance_buffer"]], dtype=torch.float)
         self.params["lidarParams_constraints"] = lidarParams.copy()
 
-        self.constraint_subsampling  = configs["constraint_subsampling"]
-        self.information_gain_subsampling = configs["information_gain_subsampling"]
+        appraisalsImplementationParams = configs["AppraisalParams"]
+        appraisalsImplementationParams["lidarParams"] = lidarParams
+        appraisalsImplementationParams["desirability_scale_factor"] = torch.tensor([configs["AppraisalParams"]["desirability_scale_factor"]], dtype=torch.float)
+        appraisalsImplementationParams["progress_scale_factor"] = torch.tensor([configs["AppraisalParams"]["progress_scale_factor"]], dtype=torch.float)
+        appraisalsImplementationParams["info_gain_scale_factor"] = torch.tensor([configs["AppraisalParams"]["info_gain_scale_factor"]], dtype=torch.float)
+        appraisalsImplementationParams["d_min"] = torch.tensor([configs["robotRadius"] + configs["AppraisalParams"]["distance_buffer"]], dtype=torch.float)
+        appraisalsImplementationParams["information_gradient_multiplier"] = torch.tensor(configs["AppraisalParams"]["information_gradient_multiplier"])
+        appraisalsImplementationParams["constraint_gradient_multiplier"] = torch.tensor(configs["AppraisalParams"]["constraint_gradient_multiplier"])
+        appraisalsImplementationParams["P_z_C_scale"] = torch.tensor(configs["AppraisalParams"]["P_z_C_scale"], dtype=torch.float)
 
-        self.memorable_states = []
+        appraisalsImplementation = AppraisalsImplementation(appraisalsImplementationParams)
+        self.planningImplementation = PlanningImplementation(configs["PlanningParams"], appraisalsImplementation)
 
-        super().__init__(K,
-                         M,
-                         N,
-                         G,
-                         L,
-                         svi_epochs,
-                         optimizer,
-                         desirability_scale_factor=desirability_scale_factor,
-                         progress_scale_factor=progress_scale_factor,
-                         info_gain_scale_factor=info_gain_scale_factor,
-                         consider_impasse=configs["consider_impasse"])
+        reflectiveAttentionMechanismImplementationParams = configs["ReflectiveAttentionMechanism"]["params"]
+        
+        if configs["ReflectiveAttentionMechanism"]["name"] == "damgaard2022RGS":
+            reflectiveAttentionMechanismImplementation = ReflectiveAttentionMechanismImplementationRGS(appraisalsImplementation, self.planningImplementation, reflectiveAttentionMechanismImplementationParams)
+        else:
+            reflectiveAttentionMechanismImplementation = ReflectiveAttentionMechanismImplementationAKS(appraisalsImplementation, self.planningImplementation, reflectiveAttentionMechanismImplementationParams)
+            
+        self.N_posterior_samples = configs["ReflectiveAttentionMechanism"]["params"]["N_posterior_samples"]
 
-    def makePlan(self, tau, T_delta, p_z_s_t, map_grid_probabilities, return_mode="mean", p_z_g=None):
-        self.map_grid_probabilities = map_grid_probabilities.detach()
-        z_a_tauPlus_samples, z_s_tauPlus_samples, k_samples = super().makePlan(tau, T_delta, p_z_s_t, N_posterior_samples=self.N_posterior_samples, p_z_g=p_z_g)
+        super().__init__(reflectiveAttentionMechanismImplementation)
+
+    def makePlan(self, tau, T_delta, obs, configs, reachGoalMode=False):
+        return_mode = configs["return_Mode"]
+
+        standard_diviation = torch.tensor(configs["initial_3_sigma"] / 3)  # 99.7% of samples within a circle of "initial_3_sigma" cm
+        variance = standard_diviation * standard_diviation
+        cov_s = variance * torch.eye(2)
+
+        if reachGoalMode:
+            goal_radius = configs["goal_zone_radius"]
+            g_standard_diviation = torch.tensor(goal_radius / 3)  # 99.7% of samples within a circle with goal_radius
+            g_variance = g_standard_diviation * g_standard_diviation
+        else:
+            p_z_g = None
+
+
+        # convert obs from sim to the format used in the agent
+        position = [obs[0][0], obs[0][1]]  # we only use the position not the heading
+        map_grid_probabilities_np = obs[1]
+        map_grid_probabilities = torch.from_numpy(map_grid_probabilities_np)
+        map_grid_probabilities = torch.flip(map_grid_probabilities, [0])
+
+        z_s_t = torch.tensor([position[0], position[1]], dtype=torch.float)
+
+        def p_z_s_t():
+            z_s_t_ = z_s_t.detach()
+            cov_s_ = cov_s.detach()
+            _p_z_s_t = dist.MultivariateNormal(z_s_t_, cov_s_)
+            z_s = pyro.sample("z_s", _p_z_s_t)
+            return z_s
+
+        if reachGoalMode:
+            if obs[2] is not None:
+                goal_pos = torch.tensor([obs[2][0], obs[2][1]], dtype=torch.float)
+                def p_z_g():
+                    z_g_ = goal_pos.detach()
+                    cov_g = g_variance * torch.eye(2)
+                    _p_z_g = dist.MultivariateNormal(z_g_, cov_g)
+                    z_g = pyro.sample("z_s", _p_z_g)
+                    return z_g
+            else:
+                goal_pos = None
+                p_z_g = None
+        else:
+            goal_pos = None
+            p_z_g = None
+
+        ltm = LTMImplementation(map_grid_probabilities.detach(), self.params["lidarParams"])
+        z_a_tauPlus_samples, z_s_tauPlus_samples, k_samples, param_store = super().makePlan(tau, T_delta, p_z_s_t, ltm, p_z_g=p_z_g)
 
         if not (return_mode == "mean" or return_mode == "random"):
             return_mode == "random"
@@ -96,7 +120,9 @@ class RobotPlanning(Planning):
             z_a_tauPlus_mean, z_s_tauPlus_mean, N_modes = self.calculate_state_action_means(z_a_tauPlus_samples, z_s_tauPlus_samples, k_samples, ForEachMode=True)
 
             if N_modes > 1:  # pick one mode randomly according to their assignment probability
-                k = dist.Categorical(pyro.param('assignment_probs')).sample()
+                unique, counts = torch.unique(torch.tensor(k_samples), return_counts=True)
+                probs = counts/counts.sum()
+                k = dist.Categorical(probs).sample()
                 z_a_tauPlus = z_a_tauPlus_mean[k]
                 z_s_tauPlus = z_s_tauPlus_mean[k]
 
@@ -115,12 +141,6 @@ class RobotPlanning(Planning):
                 #     print(path_divergence)
                 #     print(z_s1_infogain_prob)
                 #     print(z_s2_infogain_prob)
-                #     if k == 0:
-                #         if path_divergence > 0.5 and z_s2_infogain_prob > 0.8:
-                #             self.memorable_states.append(poutine.trace(p_z_s_t).get_trace())
-                #     else:
-                #         if path_divergence > 0.5 and z_s1_infogain_prob > 0.8:
-                #             self.memorable_states.append(poutine.trace(p_z_s_t).get_trace())
 
             else:
                 z_a_tauPlus = z_a_tauPlus_mean[0]
@@ -132,11 +152,11 @@ class RobotPlanning(Planning):
 
         # Transform actions
         for i in range(len(z_a_tauPlus)):
-            z_a_tauPlus[i] = self.action_transforme(z_a_tauPlus[i]).detach()
+            z_a_tauPlus[i] = self.planningImplementation.action_transforme(z_a_tauPlus[i]).detach()
 
         for j in range(self.N_posterior_samples):
             for i in range(len(z_a_tauPlus_samples[0])):
-                z_a_tauPlus_samples[j][i] = self.action_transforme(z_a_tauPlus_samples[j][i]).detach()
+                z_a_tauPlus_samples[j][i] = self.planningImplementation.action_transforme(z_a_tauPlus_samples[j][i]).detach()
 
         return z_a_tauPlus, z_s_tauPlus, z_a_tauPlus_samples, z_s_tauPlus_samples
 
@@ -180,97 +200,4 @@ class RobotPlanning(Planning):
 
         return z_a_tauPlus_mean, z_s_tauPlus_mean
 
-    # ################### Abstract methods of the class Planning ####################
-    def q_z_MB_tau(self, tau, z_s_tauMinus1, k):
-        alpha_init = torch.tensor([[10000., 10000.], [10000., 10000.]], dtype=torch.float)
-        beta_init = torch.tensor([[10000., 10000.], [10000., 10000.]], dtype=torch.float)
-        a_alpha = pyro.param("a_alpha_{}".format(k), alpha_init[k], constraint=constraints.positive)  # alpha,beta = 1 gives uniform!
-        a_beta = pyro.param("a_beta_{}".format(k), beta_init[k], constraint=constraints.positive)  # alpha,beta = 1 gives uniform!
 
-        _q_z_a_tau = dist.Beta(a_alpha, a_beta).to_event(1)
-        z_a = pyro.sample("z_a", _q_z_a_tau)
-        return z_a
-
-    def p_z_MB_tau(self, tau, z_s_tau):
-        # values should not be changed - use the params in "action_transforme" instead!
-        a_min = torch.tensor([0., 0.], dtype=torch.float)
-        a_max = torch.tensor([1., 1.], dtype=torch.float)
-        _p_z_a_tau = dist.Uniform(a_min, a_max).to_event(1)
-        z_a = pyro.sample("z_a", _p_z_a_tau)
-        return z_a
-
-    def p_z_s_tau(self, tau, z_s_tauMinus1, z_a_tauMinus1):
-        mean = z_s_tauMinus1 + self.action_transforme(z_a_tauMinus1)
-        cov = self.params["cov_s"]
-        _p_z_s_tau = dist.MultivariateNormal(mean, cov)
-        z_s = pyro.sample("z_s", _p_z_s_tau)
-        return z_s
-
-    def d_c_tau(self, tau, z_s_tau, z_LTM, z_PB_posterior):
-        # z_s_tau: position
-        # z_LTM: samples of distances to occupied map cells
-        d_c_tau = []
-        z_Map = z_LTM["z_Map"]
-        z_lidar = z_PB_posterior["z_lidar"]
-
-        # in this problem formulation both z_Map and z_lidar contain distance measures that
-        # can be used directly as constraints.
-        # using z_lidar we would include uncertainty about the lidar measurements, which
-        # due to the lidar model includes uncertainty due to moving objects in the environment.
-        # Thus if we want the robot to be extra carefull in its movement we should use the z_lidar,
-        # but for static environment, we might as use z_Map.
-        # distances = z_Map
-        distances = z_lidar
-        for key in distances:
-            if distances[key] is None:  # if no cell is sampled to be occupied put distance to inf such that I_c=1
-                d_c_tau.append(torch.tensor(float('inf')))
-            else:
-                d_c_tau.append(distances[key])
-
-        return d_c_tau
-
-
-    def p_z_LTM(self):
-        map_grid_probabilities = self.map_grid_probabilities
-        z_Map = p_z_Map_prior(map_grid_probabilities, self.params["lidarParams"])
-        z_LTM = {}
-        z_LTM["z_Map"] = z_Map
-        return z_LTM
-
-    def p_z_PB(self, tau, z_s_tau):
-        p_z_Lidar_prior(self.params["lidarParams"])
-
-    def p_z_PB_posterior(self, tau, z_s_tau, z_LTM):
-        position = z_s_tau  # z_s_tau["position"]
-        z_Map = z_LTM["z_Map"]
-        z_lidar = p_z_Lidar_posterior(position, z_Map, self.params["lidarParams"])
-        z_PB_posterior = {}
-        z_PB_posterior["z_lidar"] = z_lidar
-        return z_PB_posterior
-
-    def generate_PB_LTM_information_gain_subsampling_context(self, z_s_tau):
-        position = z_s_tau  # z_s_tau["position"]
-        PB_labels = lidar_generate_labels(self.params["lidarParams"], position, self.map_grid_probabilities, subsampling=self.information_gain_subsampling)
-        return PB_labels
-
-    def generate_PB_LTM_constraint_subsampling_context(self, z_s_tau):
-        position = z_s_tau  # z_s_tau["position"]
-        lidar_generate_labels(self.params["lidarParams"], position, self.map_grid_probabilities, subsampling=self.constraint_subsampling)
-        # Consider incorporating funtionality to focus subsampling in the direction
-        # of movement...
-
-    def I_c_tilde(self, tau, d):
-        # approximation to the indicator function used for distances
-        # d: the distance to a constraint
-        # _I_c_tilde: the approximation of the indicator function
-        # here we have used an approximation shifted in d to account for the size (radius) of the robot
-        # and to include an extra distance buffer
-        _I_c_tilde = logistic(d, self.params["d_min"], self.params["P_z_C_scale"])
-        return _I_c_tilde
-
-    # ################### other methods ####################
-    def action_transforme(self, z_a):
-        # scaling parameters for the action
-        a_offset = -self.params["a_support"] / torch.tensor([2.], dtype=torch.float)
-
-        return self.params["a_support"] * z_a + a_offset

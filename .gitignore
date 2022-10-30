@@ -130,6 +130,10 @@ dmypy.json
 
 
 # Ignore local simulation DATA
+/examples/robotPlanning/configs/damgaard2022RGS/experiment1/DATA/*
+/examples/robotPlanning/configs/damgaard2022RGS/experiment2/DATA/*
+
+# Ignore local simulation DATA
 /examples/robotPlanning/DATA/*
 # Reinclude all folders in /examples/robotPlanning/DATA
 !/examples/robotPlanning/DATA/*/
@@ -141,6 +145,7 @@ dmypy.json
 !/examples/robotPlanning/DATA/play_trajectory_example/*/*
 !/examples/robotPlanning/DATA/play_trajectory_example/*/*/*
 !/examples/robotPlanning/DATA/play_trajectory_example/*/*/*/*
+
 
 
 # Ignore local simulation DATA

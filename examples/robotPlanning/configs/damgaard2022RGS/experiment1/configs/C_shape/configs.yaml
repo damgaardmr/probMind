@@ -1,0 +1,78 @@
+AppraisalParams:
+  G: 1
+  L: 5
+  Lamda_p_min: 0.5
+  M: 2
+  N: 3
+  P_z_C_scale: 500.0
+  constraint_gradient_multiplier: 1.0
+  constraint_subsampling: 8
+  desirability_scale_factor: 10.0
+  distance_buffer: 0.0
+  info_gain_scale_factor: 0.001
+  information_gain_subsampling: 6
+  information_gradient_multiplier: 1.0
+  progress_scale_factor: 0.01
+Map_order: true
+PlanningParams:
+  K: 1
+  a_support:
+  - 2
+  - 2
+  gamma: 0.2
+  initial_lr: 0.05
+  movement_3_sigma: 0.2
+  svi_epochs: 30
+ReflectiveAttentionMechanism:
+  name: damgaard2022RGS
+  params:
+    N_posterior_samples: 20
+    P_min_backtracking: 0.1
+    P_z_C_lim: 0.95
+    P_z_i_delta: 0.25
+    P_z_i_lim: 0.0
+    P_z_i_lim2: 0.075
+    P_z_p_lim: 0.5
+    P_z_p_lim2: 0.5
+    max_backtracking_evaluations: 2
+T_delta: 2
+goalPosition:
+  x: 16.75
+  y: 7.5
+goal_zone_est_error_3_sigma: 0.1
+goal_zone_radius: 0.5
+imageScaling: 1
+initial_3_sigma: 0.2
+json_dir: ../../../../robotPlanning/configs\damgaard2022RGS\experiment1/maps/
+lidar:
+  P_hit: 0.99999
+  P_max: 0.0
+  P_rand: 1.0e-05
+  P_short: 0.0
+  fov: 360
+  lambda_short: None
+  range: 4
+  resolution: 1
+  sigma_hit: 0.1
+map_id_set: map_ids.txt
+meter2pixel: 25
+mode: 0
+obstacle:
+  number: 0
+  size:
+    max: 0.6
+    min: 0.2
+plotWhileSim: true
+randomGoal: false
+reachGoalMode: true
+resetRandomPose: 0
+return_Mode: mean
+robotRadius: 0.35
+slamError:
+  angular: 0
+  linear: 0
+startPose:
+  theta: 0.0
+  x: -8.0
+  y: -5.0
+t_max: 400

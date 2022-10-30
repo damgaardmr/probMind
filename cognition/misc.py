@@ -25,7 +25,7 @@ def Lautum_information_estimate(p_z_1_prior, p_z_2_prior, p_z_2_posterior, z_2_l
     N_obs = len(z_2_labels)
     information = torch.zeros(N_obs)
     outerscope = ""
-    scale = float(M * N * N_obs)
+    scale = torch.tensor(M * N * N_obs, dtype=torch.float64)
 
     z_1_ = []
     for n in range(N):
@@ -35,7 +35,7 @@ def Lautum_information_estimate(p_z_1_prior, p_z_2_prior, p_z_2_posterior, z_2_l
                 z_1_.append(z_1)
 
     for m in range(M):
-        p_z_2_posterior_log_probs = torch.zeros(N_obs, N)
+        p_z_2_posterior_log_probs = torch.zeros(N_obs, N, dtype=torch.float64)
 
         with scope(prefix=str(m)):
             with poutine.block():
@@ -62,10 +62,17 @@ def Lautum_information_estimate(p_z_1_prior, p_z_2_prior, p_z_2_posterior, z_2_l
 
         for i in range(N_obs):
             # information[i] = information[i] + torch.logsumexp(p_z_2_posterior_log_probs[i], 0) - torch.log(torch.tensor(N)) - torch.sum(p_z_2_posterior_log_probs[i]) / N
-            information[i] = information[i] + torch.logsumexp(p_z_2_posterior_log_probs[i], 0) - torch.log(torch.tensor(N)) - torch.sum(p_z_2_posterior_log_probs[i].detach()) / N  # <-- this ".detach()" improves gradients
+            # information[i] = information[i] + torch.logsumexp(p_z_2_posterior_log_probs[i], 0) - torch.log(torch.tensor(N)) - torch.sum(p_z_2_posterior_log_probs[i].detach()) / N  # <-- this ".detach()" improves gradients
 
+            tmp = torch.logsumexp(p_z_2_posterior_log_probs[i], 0) - torch.log(torch.tensor(N)) - torch.sum(p_z_2_posterior_log_probs[i].detach()) / N  # <-- this ".detach()" improves gradients
+            if tmp <= torch.finfo(torch.float32).eps: # we make calculations with float64 but truncate to float32 to avoid numerical issues - e.g. from "Loss of Significance"
+                tmp = torch.tensor(0.0)
+
+            information[i] = information[i] + tmp
+            
     information = information / M
     information = relu(information)
+
     return information
 
 

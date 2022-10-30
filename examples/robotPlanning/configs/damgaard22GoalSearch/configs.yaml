@@ -1,10 +1,5 @@
 # ###################### Settings for __Main__.py ######################
-map_id_set: map_ids_fully_explored.txt  # the maps from damgaard22GoalSearch which finished in 200 timesteps 
-# map_id_set: map_id.txt  #
-reachGoalMode: True  # generate random goals and search for them
-goal_zone_radius: 0.5
-goal_zone_est_error_3_sigma: 0.1  # used to determine the covariance of the gaussian noise added to the estimated mean of the goal zone
-# Map_order: True
+map_id_set: map_ids_fully_explored.txt
 Map_order: False
 t_max: 400
 T_delta: 3
@@ -12,43 +7,32 @@ imageScaling: 2  # should the saved/shown plots be scaled?
 resetRandomPose: 1 # flag of whether randomly set robot init pose ar each reset | if 0, robot reset to startPose at each reset
 
 # robot setting
-robotRadius: 0.2 # robot radius in meter
+robotRadius: 0.1 # robot radius in meter - in "Enhancing Robots Navigation in Internet of Things Indoor Systems" they use a robot of 0.7x0.7 m
+
+reachGoalMode: True # generate random goals and search for them
+randomGoal: True
+goal_always_observed: False # is the true goal location always observed?
+goal_zone_radius: 0.5
+goal_zone_est_error_3_sigma: 0.1  # used to determine the covariance of the gaussian noise added to the estimated mean of the goal zone
+
 startPose: # robot starting pose [y;x;theta] in meter in world coord with center as origin | theta: angle to the x-axis - only used if "resetRandomPose: 0"
   x: 12
   y: 5
   theta: 0
+goalPosition: # only necessary if "randomGoal: False"
+  x: 0.0
+  y: 0.0
 
-
-# ###################### Settings for robotexploration.py ######################
-svi_epochs: 30  # number of epocs used for svi each timestep
-N_posterior_samples: 30  # number of samples used to calculate sample mean of posterior distribution
+# ###################### Settings for robot_exploration_ProbMind.py ######################
 return_Mode: "mean"  # "mean" or "random"
-
-K: 1  # K: number of options/trajectories to consider
-M: 2  # M: number of samples from each independent perception in calculation of the information gain
-N: 3  # N: number of LTM samples used in calculation of the information gain
-G: 1  # G: number of samples from each independent constraint
-L: 5  # L: number of past states to consider in progress
-
-desirability_scale_factor: 0.03
-# progress_scale_factor: 0.01
-progress_scale_factor: 0.005
-#info_gain_scale_factor: 2.0
-info_gain_scale_factor: 1.0
-
-consider_impasse: True  # True enables check of impasse and Goal search
-
-initial_lr: 0.05
-gamma: 0.2  # final learning rate will be gamma * initial_lr
+plotWhileSim: True
 
 # In these simulations we have lowered to the uncertainties, since the values used for the exploration simulations did not allow the robot to go through narrow doorways
-initial_3_sigma: 0.1  # used to define covariance of the distribution over initial position - 99.7% of samples within a circle of 2 cm
-movement_3_sigma: 0.05  # 99.7% of future movements can be expected to be within a circle of 5 cm
-a_support: [2, 2]  # support of the action distributions
+initial_3_sigma: 0.2  # used to define covariance of the distribution over initial position - 99.7% of samples within a circle of 2 cm
 
 # lidar params
 lidar:
-  range: 2 # laser range in meter
+  range: 4 # laser range in meter - same as in "Enhancing Robots Navigation in Internet of Things Indoor Systems"
   fov: 360 # laser field of view in degree
   resolution: 1 # laser rotation resolution in degree
   sigma_hit: 0.10
@@ -58,11 +42,44 @@ lidar:
   P_max: 0.0
   P_short: 0.0  # not implemented yet! => should always be zero
 
-# constraint params
-distance_buffer: 0.05
-P_z_C_scale: 19.75
-constraint_subsampling: 16
-information_gain_subsampling: 1
+AppraisalParams:
+  desirability_scale_factor: 10.0
+  progress_scale_factor: 0.01
+  info_gain_scale_factor: 0.001
+  P_z_C_scale: 500.0
+  Lamda_p_min: 0.5
+  constraint_subsampling: 8
+  information_gain_subsampling: 6
+  M: 2  # M: number of samples from each independent perception in calculation of the information gain
+  N: 3  # N: number of LTM samples used in calculation of the information gain
+  G: 1  # G: number of samples from each independent constraint
+  L: 5  # L: number of past states to consider in progress
+  constraint_gradient_multiplier: 1.0 # In case of vanishing gradients try to modify this
+  information_gradient_multiplier: 1.0 # In case of vanishing gradients try to modify this
+  distance_buffer: 0.0
+
+PlanningParams:
+  movement_3_sigma: 0.1  # 99.7% of future movements can be expected to be within a circle with radius of 20 cm
+  a_support: [2, 2]  # support of the action distributions - could have been 
+  svi_epochs: 30  # number of epocs used for svi each timestep
+  initial_lr: 0.05
+  gamma: 0.2  # final learning rate will be gamma * initial_lr
+  K: 1  # K: number of options/trajectories to consider
+
+
+# Reflective Attention Mechanism
+ReflectiveAttentionMechanism:
+  name: "damgaard2022RGS" # damgaard2022AKS or damgaard2022RGS
+  params:
+    N_posterior_samples: 20  # number of samples used to calculate sample mean of posterior distribution
+    P_min_backtracking: 0.1
+    max_backtracking_evaluations: 2
+    P_z_p_lim: 0.50
+    P_z_i_lim: 0.0
+    P_z_i_delta: 0.25
+    P_z_i_lim2: 0.075
+    P_z_C_lim: 0.95
+
 
 # ###################### Environment Settings for the pseudoslam simulator ######################
 json_dir: ../../HouseExpo/json/

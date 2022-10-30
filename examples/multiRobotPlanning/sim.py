@@ -136,7 +136,7 @@ def main(args):
     # USAGE ...
     # python3 __main__.py -config_file "configs/damgaard2022SVIFDPR/configs.yaml"
 
-    config_folder = "configs/damgaard2022SVIFDPR"
+    config_folder = "configs/damgaard2022SVIFDPR/Antipodal_Circle"
     #config_folder = "configs/test"
     config_file = config_folder + "/configs.yaml"
 
