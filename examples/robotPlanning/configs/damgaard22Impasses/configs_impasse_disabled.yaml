@@ -7,7 +7,7 @@ imageScaling: 3  # should the saved/shown plots be scaled?
 resetRandomPose: 0 # flag of whether randomly set robot init pose ar each reset | if 0, robot reset to startPose at each reset
 
 # robot setting
-robotRadius: 0.2 # robot radius in meter - in "Enhancing Robots Navigation in Internet of Things Indoor Systems" they use a robot of 0.7x0.7 m
+robotRadius: 0.1 # robot radius in meter - in "Enhancing Robots Navigation in Internet of Things Indoor Systems" they use a robot of 0.7x0.7 m
 
 reachGoalMode: True # generate random goals and search for them
 randomGoal: False
@@ -17,7 +17,7 @@ goal_zone_est_error_3_sigma: 0.1  # used to determine the covariance of the gaus
 
 startPose: # robot starting pose [y;x;theta] in meter in world coord with center as origin | theta: angle to the x-axis - only used if "resetRandomPose: 0"
   theta: 0.0
-  x: -5.0
+  x: 0.5
   y: 0.0
 goalPosition:
   x: 5.5
@@ -80,8 +80,6 @@ ReflectiveAttentionMechanism:
     P_z_i_lim2: 0.075
     P_z_C_lim: 0.95
     Disable_Impasse: True
-
-
 
 # ###################### Environment Settings for the pseudoslam simulator ######################
 # json_dir: ../../HouseExpo/json/

@@ -43,6 +43,11 @@ class ReflectiveAttentionMechanismImplementation(ReflectiveAttentionMechanism):
         else:
             self.always_go_to_goal_when_visable = False
 
+        if "parallel_processing" in params:
+            self.parallel_processing = params["parallel_processing"]
+        else:
+            self.parallel_processing = True
+
         self.chosen_plan = None
         self.ancestorsStateIndexes = [0]
         self.rootStateBranch = StateTreeBranch(stateIndexes=[])
@@ -97,7 +102,7 @@ class ReflectiveAttentionMechanismImplementation(ReflectiveAttentionMechanism):
         tic1 = time.time()
         deliberateAttentionMechanisms_to_evaluate = self.WM_deliberate_attention_proposal_(t, T, p_z_s_t, deliberateAttentionMechanisms_evaluated, p_z_s_Minus, p_z_s_Minus_traces, ltm, p_z_g, deliberateAttentionMechanism, dynamicParams)
         tic2 = time.time()
-        deliberateAttentionMechanisms_evaluated.update(self.WM_eval_deliberateAttentionMechanisms(t, T, p_z_s_t, deliberateAttentionMechanisms_to_evaluate, p_z_s_Minus_traces, ltm, dynamicParams))
+        deliberateAttentionMechanisms_evaluated.update(self.WM_eval_deliberateAttentionMechanisms(t, T, p_z_s_t, deliberateAttentionMechanisms_to_evaluate, p_z_s_Minus_traces, ltm, dynamicParams, parallel_processing=self.parallel_processing))
         tic3 = time.time()
         chosen_plan, recursions_ = self.WM_affective_responses_(t, T, p_z_s_t, deliberateAttentionMechanisms_evaluated, p_z_s_Minus, p_z_s_Minus_traces, ltm, p_z_g, deliberateAttentionMechanism, recursions, dynamicParams)
         toc = time.time()
@@ -180,7 +185,7 @@ class ReflectiveAttentionMechanismImplementation(ReflectiveAttentionMechanism):
                 p_z_g_backtracking, backtracking_KL_baseline = self.get_backtracking_goal(t, p_z_s_Minus, p_z_s_Minus_traces, delta_t=i)
                 if p_z_g_backtracking is not None:
                     self.n_backtracking_actually_evaluated = self.n_backtracking_actually_evaluated + 1
-                    deliberateAttentionMechanisms_ = StateReach(self.appraisalsImplementation, ltm, self.params, dynamicParams, p_z_g=p_z_g_backtracking, desirability_KL_baseline=backtracking_KL_baseline.detach(), name="Backtracking_"+str(i))
+                    deliberateAttentionMechanisms_ = StateReach(self.appraisalsImplementation, ltm, self.params, p_z_g=p_z_g_backtracking, desirability_KL_baseline=backtracking_KL_baseline.detach(), name="Backtracking_"+str(i))
                     deliberateAttentionMechanisms_to_evaluate.append(deliberateAttentionMechanisms_)
 
         else:

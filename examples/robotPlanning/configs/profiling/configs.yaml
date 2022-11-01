@@ -17,10 +17,10 @@ goal_zone_est_error_3_sigma: 0.1  # used to determine the covariance of the gaus
 
 startPose: # robot starting pose [y;x;theta] in meter in world coord with center as origin | theta: angle to the x-axis - only used if "resetRandomPose: 0"
   theta: 0.0
-  x: 0.5
+  x: -4.0
   y: 0.0
 goalPosition:
-  x: 5.5
+  x: 9.0
   y: 3.5
 
 # ###################### Settings for robot_exploration_ProbMind.py ######################
@@ -79,11 +79,12 @@ ReflectiveAttentionMechanism:
     P_z_i_delta: 0.25
     P_z_i_lim2: 0.075
     P_z_C_lim: 0.95
+    parallel_processing: False
 
 
 # ###################### Environment Settings for the pseudoslam simulator ######################
 # json_dir: ../../HouseExpo/json/
-json_dir: ../../../../robotPlanning/configs/damgaard22Impasses/
+json_dir: ../../../../robotPlanning/configs/profiling/
 meter2pixel: 25 # X pixel =1 meter
 mode: 0  # 0 for exploration mode, 1 for navigation mode
 

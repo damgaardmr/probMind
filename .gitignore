@@ -131,7 +131,9 @@ dmypy.json
 
 # Ignore local simulation DATA
 /examples/robotPlanning/configs/damgaard2022RGS/experiment1/DATA/*
+/examples/robotPlanning/configs/damgaard2022RGS/experiment1/tikzPlots/*
 /examples/robotPlanning/configs/damgaard2022RGS/experiment2/DATA/*
+/examples/robotPlanning/configs/damgaard2022RGS/experiment2/tikzPlots/*
 
 # Ignore local simulation DATA
 /examples/robotPlanning/DATA/*

@@ -367,6 +367,54 @@ def file_len(fname):
     return i + 1
 
 
+def create_env_configs(configs, config_folder, DataDir, processID):
+    env_configs = {}
+    env_configs['json_dir'] = configs['json_dir']
+    env_configs['map_id_set'] = "../../../../" + config_folder + "/" + configs['map_id_set']
+    env_configs['meter2pixel'] = configs['meter2pixel']
+    env_configs['mode'] = configs['mode']
+    env_configs["reachGoalMode"] = configs["reachGoalMode"]
+    if configs["reachGoalMode"]:
+        env_configs["goal_zone_radius"] = configs["goal_zone_radius"]
+        env_configs["goal_zone_est_error_3_sigma"] = configs["goal_zone_est_error_3_sigma"]
+        if "randomGoal" in configs:
+            env_configs["randomGoal"] = configs["randomGoal"]
+        if "goalPosition" in configs:
+            env_configs["goalPosition"] = configs["goalPosition"]
+        if "goal_always_observed" in configs:
+            env_configs["goal_always_observed"] = configs["goal_always_observed"]
+        else:
+            env_configs["goal_always_observed"] = True
+            configs["goal_always_observed"]  = True
+    env_configs['continuesActions'] = True
+    env_configs['obstacle'] = configs['obstacle']
+    env_configs['robotRadius'] = configs['robotRadius']
+    env_configs['stepLength'] = {}  # NOT RELEVENT! not used in this settings with "continuesActions: True"
+    env_configs['stepLength']["linear"] = 1
+    env_configs['stepLength']["angular"] = 1
+    env_configs['startPose'] = configs['startPose']
+    env_configs['resetRandomPose'] = configs['resetRandomPose']
+    env_configs['laser'] = {}
+    env_configs['laser']["range"] = configs['lidar']["range"]
+    env_configs['laser']["fov"] = configs['lidar']["fov"]
+    env_configs['laser']["resolution"] = configs['lidar']["resolution"]
+    env_configs['laser']["noiseSigma"] = configs['lidar']["sigma_hit"]
+    env_configs['slamError'] = configs['slamError']
+    env_configs['stateSize'] = {}  # NOT RELEVENT - used to generate local map
+    env_configs['stateSize']["x"] = 1  # NOT RELEVENT!
+    env_configs['stateSize']["y"] = 1  # NOT RELEVENT!
+    env_configs['map_id_set'] = "../../../../robotPlanning/" + DataDir + "/map_ids_process_" + str(processID) + ".txt"
+
+    env_config_file = DataDir + "/sim_config_process_" + str(processID) + ".yaml"
+    with open(Path(env_config_file), 'w') as stream:
+        try:
+            yaml.dump(env_configs, stream, default_flow_style=False, Dumper=Dumper)
+        except yaml.YAMLError as exc:
+            print(exc)
+
+    return configs, env_configs, env_config_file
+
+
 def main(args):
     os.system("taskset -p 0xffffffffff %d" % os.getpid())  # solves not fully utilization of cpu cores on ubuntu
     # remember to have enough f's relative to the number of cores!! https://stackoverflow.com/questions/31320194/python-multiprocessing-8-24-cores-loaded
@@ -384,6 +432,8 @@ def main(args):
     #config_folder = "configs/damgaard22GoalSearch_experiment2/double_U_shape"
     #config_folder = "configs/damgaard22MultiModalActionPosterior"
     #config_folder = "configs/damgaard2022AKS"
+    #config_folder = "configs/damgaard22Impasses"
+    config_folder = "configs/profiling"
     config_file = None
     print("args: " + str(args))
     # Treat args
@@ -470,58 +520,22 @@ def main(args):
     for fname in files:
         num_maps.append(file_len(fname))
 
-    jobs = []
-    for processID in process_to_start:
-        env_configs = {}
-        env_configs['json_dir'] = configs['json_dir']
-        env_configs['map_id_set'] = "../../../../" + config_folder + "/" + configs['map_id_set']
-        env_configs['meter2pixel'] = configs['meter2pixel']
-        env_configs['mode'] = configs['mode']
-        env_configs["reachGoalMode"] = configs["reachGoalMode"]
-        if configs["reachGoalMode"]:
-            env_configs["goal_zone_radius"] = configs["goal_zone_radius"]
-            env_configs["goal_zone_est_error_3_sigma"] = configs["goal_zone_est_error_3_sigma"]
-            if "randomGoal" in configs:
-                env_configs["randomGoal"] = configs["randomGoal"]
-            if "goalPosition" in configs:
-                env_configs["goalPosition"] = configs["goalPosition"]
-            if "goal_always_observed" in configs:
-                env_configs["goal_always_observed"] = configs["goal_always_observed"]
-            else:
-                env_configs["goal_always_observed"] = True
-                configs["goal_always_observed"]  = True
-        env_configs['continuesActions'] = True
-        env_configs['obstacle'] = configs['obstacle']
-        env_configs['robotRadius'] = configs['robotRadius']
-        env_configs['stepLength'] = {}  # NOT RELEVENT! not used in this settings with "continuesActions: True"
-        env_configs['stepLength']["linear"] = 1
-        env_configs['stepLength']["angular"] = 1
-        env_configs['startPose'] = configs['startPose']
-        env_configs['resetRandomPose'] = configs['resetRandomPose']
-        env_configs['laser'] = {}
-        env_configs['laser']["range"] = configs['lidar']["range"]
-        env_configs['laser']["fov"] = configs['lidar']["fov"]
-        env_configs['laser']["resolution"] = configs['lidar']["resolution"]
-        env_configs['laser']["noiseSigma"] = configs['lidar']["sigma_hit"]
-        env_configs['slamError'] = configs['slamError']
-        env_configs['stateSize'] = {}  # NOT RELEVENT - used to generate local map
-        env_configs['stateSize']["x"] = 1  # NOT RELEVENT!
-        env_configs['stateSize']["y"] = 1  # NOT RELEVENT!
-        env_configs['map_id_set'] = "../../../../robotPlanning/" + DataDir + "/map_ids_process_" + str(processID) + ".txt"
 
-        env_config_file = DataDir + "/sim_config_process_" + str(processID) + ".yaml"
-        with open(Path(env_config_file), 'w') as stream:
-            try:
-                yaml.dump(env_configs, stream, default_flow_style=False, Dumper=Dumper)
-            except yaml.YAMLError as exc:
-                print(exc)
+    if len(process_to_start) > 1:
+        jobs = []
+        for processID in process_to_start:
+            configs, env_configs = create_env_configs(configs, config_folder, DataDir, processID)
 
-        p = multiprocessing.Process(target=process_func, args=(processID, dirName, DataDir, configs, env_config_file, Map_order, num_maps[processID], t_max, reachGoalMode))
-        p.start()
-        jobs.append(p)
+            p = multiprocessing.Process(target=process_func, args=(processID, dirName, DataDir, configs, env_config_file, Map_order, num_maps[processID], t_max, reachGoalMode))
+            p.start()
+            jobs.append(p)
 
-    for job in jobs: # wait until all processes finishes
-        job.join()
+        for job in jobs: # wait until all processes finishes
+            job.join()
+    else:
+        processID = process_to_start[0]
+        configs, env_configs, env_config_file = create_env_configs(configs, config_folder, DataDir, processID)
+        process_func(processID, dirName, DataDir, configs, env_config_file, Map_order, num_maps[processID], t_max, reachGoalMode)
 
 
 if __name__ == '__main__':
